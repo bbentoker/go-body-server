@@ -1,0 +1,12 @@
+Now add these routes for providers
+
+add admin 
+add worker 
+
+login admin 
+
+login worker 
+
+and also crud for for all
+
+but before doing this create a new service named encryptor and make sure to do the encryption and decryption with the methods in this service all the time 
