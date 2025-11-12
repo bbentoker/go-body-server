@@ -50,6 +50,11 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: true,
       },
+      is_verified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,

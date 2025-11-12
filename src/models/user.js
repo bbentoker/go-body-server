@@ -31,6 +31,11 @@ module.exports = (sequelize) => {
       password_hash: {
         type: DataTypes.STRING(255),
       },
+      is_verified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,

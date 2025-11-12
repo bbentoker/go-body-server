@@ -118,34 +118,6 @@ const createWorkerProvider = asyncHandler(async (req, res) => {
   return res.status(201).json(provider);
 });
 
-const loginAdminProvider = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required' });
-  }
-
-  const provider = await providerService.authenticateProvider(email, password, ADMIN_ROLE_ID);
-  if (!provider) {
-    return res.status(401).json({ message: 'Invalid admin credentials' });
-  }
-
-  return res.json(provider);
-});
-
-const loginWorkerProvider = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required' });
-  }
-
-  const provider = await providerService.authenticateProvider(email, password, WORKER_ROLE_ID);
-  if (!provider) {
-    return res.status(401).json({ message: 'Invalid worker credentials' });
-  }
-
-  return res.json(provider);
-});
-
 const createProvider = asyncHandler(async (req, res) => {
   const { payload, missingRequired } = extractProviderPayload(
     req.body,
@@ -222,8 +194,6 @@ const deleteProvider = asyncHandler(async (req, res) => {
 module.exports = {
   createAdminProvider,
   createWorkerProvider,
-  loginAdminProvider,
-  loginWorkerProvider,
   createProvider,
   listProviders,
   getProviderById,

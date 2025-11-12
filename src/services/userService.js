@@ -1,4 +1,5 @@
 const { User, Reservation } = require('../models');
+const encryptor = require('./encryptor');
 
 const defaultUserInclude = [
   {
@@ -7,42 +8,147 @@ const defaultUserInclude = [
   },
 ];
 
-async function createUser(payload) {
-  return User.create(payload);
-}
-
-async function getUserById(userId, options = {}) {
-  return User.findByPk(userId, {
-    include: options.includeReservations ? defaultUserInclude : undefined,
-  });
-}
-
-async function getUsers(options = {}) {
-  return User.findAll({
-    include: options.includeReservations ? defaultUserInclude : undefined,
-    where: options.where,
-    limit: options.limit,
-    offset: options.offset,
-    order: options.order,
-  });
-}
-
-async function updateUser(userId, updates) {
-  const user = await User.findByPk(userId);
-  if (!user) {
+function sanitizeUser(userInstance) {
+  if (!userInstance) {
     return null;
   }
 
-  await user.update(updates);
+  const user = userInstance.get
+    ? userInstance.get({ plain: true })
+    : { ...userInstance };
+
+  if (user.password_hash) {
+    delete user.password_hash;
+  }
+
   return user;
 }
 
-async function deleteUser(userId) {
-  const deletedCount = await User.destroy({
-    where: { user_id: userId },
+async function prepareUserPayload(payload) {
+  const userData = { ...payload };
+  if (Object.prototype.hasOwnProperty.call(userData, 'password')) {
+    if (userData.password) {
+      userData.password_hash = await encryptor.hashPassword(userData.password);
+    }
+    delete userData.password;
+  }
+  
+  Object.keys(userData).forEach((key) => {
+    if (typeof userData[key] === 'undefined') {
+      delete userData[key];
+    }
   });
+  
+  return userData;
+}
 
-  return deletedCount > 0;
+async function createUser(payload) {
+  try {
+    const userData = await prepareUserPayload(payload);
+    const user = await User.create(userData);
+    return sanitizeUser(user);
+  } catch (error) {
+    console.error('Error creating user', error);
+    throw error;
+  }
+}
+
+async function getUserById(userId, options = {}) {
+  try {
+    const user = await User.findByPk(userId, {
+      include: options.includeReservations ? defaultUserInclude : undefined,
+    });
+
+    return sanitizeUser(user);
+  } catch (error) {
+    console.error('Error in getUserById service:', error);
+    throw error;
+  }
+}
+
+async function getUsers(options = {}) {
+  try {
+    const users = await User.findAll({
+      include: options.includeReservations ? defaultUserInclude : undefined,
+      where: options.where,
+      limit: options.limit,
+      offset: options.offset,
+      order: options.order,
+    });
+
+    return users.map(sanitizeUser);
+  } catch (error) {
+    console.error('Error in getUsers service:', error);
+    throw error;
+  }
+}
+
+async function updateUser(userId, updates) {
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return null;
+    }
+
+    const userData = await prepareUserPayload(updates);
+
+    await user.update(userData);
+    await user.reload();
+    return sanitizeUser(user);
+  } catch (error) {
+    console.error('Error in updateUser service:', error);
+    throw error;
+  }
+}
+
+async function deleteUser(userId) {
+  try {
+    const deletedCount = await User.destroy({
+      where: { user_id: userId },
+    });
+
+    return deletedCount > 0;
+  } catch (error) {
+    console.error('Error in deleteUser service:', error);
+    throw error;
+  }
+}
+
+async function getUserByEmail(email, options = {}) {
+  try {
+    const user = await User.findOne({
+      where: { email },
+      include: options.includeReservations ? defaultUserInclude : undefined,
+    });
+
+    return sanitizeUser(user);
+  } catch (error) {
+    console.error('Error in getUserByEmail service:', error);
+    throw error;
+  }
+}
+
+async function authenticateUser(email, password) {
+  try {
+    const user = await User.findOne({
+      where: { email },
+      include: defaultUserInclude,
+    });
+
+    if (!user || !user.password_hash) {
+      return null;
+    }
+
+    const isValid = await encryptor.verifyPassword(password, user.password_hash);
+    if (!isValid) {
+      return null;
+    }
+
+    return sanitizeUser(user);
+  } catch (error) {
+    console.error('Error in authenticateUser service:', error);
+    throw error;
+  }
 }
 
 module.exports = {
@@ -51,5 +157,7 @@ module.exports = {
   getUsers,
   updateUser,
   deleteUser,
+  getUserByEmail,
+  authenticateUser,
 };
 

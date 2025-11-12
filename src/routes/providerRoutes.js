@@ -6,8 +6,6 @@ const router = express.Router();
 
 router.post('/admin', providerController.createAdminProvider);
 router.post('/worker', providerController.createWorkerProvider);
-router.post('/admin/login', providerController.loginAdminProvider);
-router.post('/worker/login', providerController.loginWorkerProvider);
 
 router.post('/', providerController.createProvider);
 router.get('/', providerController.listProviders);

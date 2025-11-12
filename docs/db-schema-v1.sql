@@ -2,6 +2,7 @@
 -- mevcut tabloları (ve bağlı olanları) temizle.
 DROP TABLE IF EXISTS reservations CASCADE;
 DROP TABLE IF EXISTS provider_services_relation CASCADE;
+DROP TABLE IF EXISTS refresh_tokens CASCADE;
 DROP TABLE IF EXISTS providers CASCADE;
 DROP TABLE IF EXISTS provider_roles CASCADE;
 DROP TABLE IF EXISTS services CASCADE;
@@ -16,6 +17,7 @@ CREATE TABLE users (
     email VARCHAR(255) UNIQUE NOT NULL,
     phone_number VARCHAR(50),
     password_hash VARCHAR(255), -- Sosyal girişler vb. için NULL olabilir
+    is_verified BOOLEAN NOT NULL DEFAULT false, -- Email verification status
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -48,6 +50,7 @@ CREATE TABLE providers (
     bio TEXT, -- Profil sayfasında gösterim için
     role_id BIGINT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true, -- Artık çalışmıyorsa false yapılır
+    is_verified BOOLEAN NOT NULL DEFAULT false, -- Email verification status
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_provider_role
@@ -154,6 +157,35 @@ CREATE TABLE reservations (
     CONSTRAINT check_time_order CHECK (end_time > start_time)
 );
 
+-- 7. 'refresh_tokens' (Yenileme Token'ları)
+-- Kullanıcı ve sağlayıcı oturum yönetimi için refresh token'ları saklar.
+CREATE TABLE refresh_tokens (
+    token_id BIGSERIAL PRIMARY KEY,
+    token_hash VARCHAR(255) NOT NULL UNIQUE, -- SHA-256 hash of the refresh token
+    user_id BIGINT, -- NULL if this is a provider token
+    provider_id BIGINT, -- NULL if this is a user token
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    revoked_at TIMESTAMPTZ, -- Token iptal edildiğinde set edilir
+    
+    -- Foreign Key Kısıtlamaları
+    CONSTRAINT fk_refresh_token_user
+        FOREIGN KEY(user_id) 
+        REFERENCES users(user_id)
+        ON DELETE CASCADE, -- Kullanıcı silinirse token'ları da silinir
+    
+    CONSTRAINT fk_refresh_token_provider
+        FOREIGN KEY(provider_id) 
+        REFERENCES providers(provider_id)
+        ON DELETE CASCADE, -- Sağlayıcı silinirse token'ları da silinir
+    
+    -- Bir token ya user ya da provider'a ait olmalı, ikisine birden değil
+    CONSTRAINT check_token_owner CHECK (
+        (user_id IS NOT NULL AND provider_id IS NULL) OR
+        (user_id IS NULL AND provider_id IS NOT NULL)
+    )
+);
+
 ---
 --- PERFORMANS İÇİN INDEX'LER
 ---
@@ -173,3 +205,19 @@ ON provider_services_relation (service_id);
 -- Sağlayıcıların rollerine göre filtreleme için.
 CREATE INDEX idx_providers_role_id 
 ON providers (role_id);
+
+-- Refresh token'ları hash ile hızlı bulmak için.
+CREATE INDEX idx_refresh_tokens_token_hash 
+ON refresh_tokens (token_hash);
+
+-- Kullanıcı token'larını hızlı bulmak için.
+CREATE INDEX idx_refresh_tokens_user_id 
+ON refresh_tokens (user_id);
+
+-- Sağlayıcı token'larını hızlı bulmak için.
+CREATE INDEX idx_refresh_tokens_provider_id 
+ON refresh_tokens (provider_id);
+
+-- Süresi dolmuş token'ları temizlemek için.
+CREATE INDEX idx_refresh_tokens_expires_at 
+ON refresh_tokens (expires_at);

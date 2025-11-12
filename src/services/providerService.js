@@ -64,73 +64,103 @@ async function createProvider(payload) {
 }
 
 async function getProviderById(providerId, options = {}) {
-  const provider = await Provider.findByPk(providerId, {
-    include: options.includeRelations ? defaultProviderInclude : undefined,
-  });
+  try {
+    const provider = await Provider.findByPk(providerId, {
+      include: options.includeRelations ? defaultProviderInclude : undefined,
+    });
 
-  return sanitizeProvider(provider);
+    return sanitizeProvider(provider);
+  } catch (error) {
+    console.error('Error in getProviderById service:', error);
+    throw error;
+  }
 }
 
 async function getProviders(options = {}) {
-  const providers = await Provider.findAll({
-    include: options.includeRelations ? defaultProviderInclude : undefined,
-    where: options.where,
-    limit: options.limit,
-    offset: options.offset,
-    order: options.order,
-  });
+  try {
+    const providers = await Provider.findAll({
+      include: options.includeRelations ? defaultProviderInclude : undefined,
+      where: options.where,
+      limit: options.limit,
+      offset: options.offset,
+      order: options.order,
+    });
 
-  return providers.map(sanitizeProvider);
+    return providers.map(sanitizeProvider);
+  } catch (error) {
+    console.error('Error in getProviders service:', error);
+    throw error;
+  }
 }
 
 async function updateProvider(providerId, updates) {
-  const provider = await Provider.findByPk(providerId);
-  if (!provider) {
-    return null;
+  try {
+    const provider = await Provider.findByPk(providerId);
+    if (!provider) {
+      return null;
+    }
+
+    const providerData = await prepareProviderPayload(updates);
+
+    await provider.update(providerData);
+    await provider.reload();
+    return sanitizeProvider(provider);
+  } catch (error) {
+    console.error('Error in updateProvider service:', error);
+    throw error;
   }
-
-  const providerData = await prepareProviderPayload(updates);
-
-  await provider.update(providerData);
-  await provider.reload();
-  return sanitizeProvider(provider);
 }
 
 async function deleteProvider(providerId) {
-  const deletedCount = await Provider.destroy({
-    where: { provider_id: providerId },
-  });
+  try {
+    const deletedCount = await Provider.destroy({
+      where: { provider_id: providerId },
+    });
 
-  return deletedCount > 0;
+    return deletedCount > 0;
+  } catch (error) {
+    console.error('Error in deleteProvider service:', error);
+    throw error;
+  }
 }
 
 async function getProviderByEmail(email, options = {}) {
-  const provider = await Provider.findOne({
-    where: { email },
-    include: options.includeRelations ? defaultProviderInclude : undefined,
-  });
+  try {
+    const provider = await Provider.findOne({
+      where: { email },
+      include: options.includeRelations ? defaultProviderInclude : undefined,
+    });
 
-  return sanitizeProvider(provider);
+    return sanitizeProvider(provider);
+  } catch (error) {
+    console.error('Error in getProviderByEmail service:', error);
+    throw error;
+  }
 }
 
 async function authenticateProvider(email, password, roleId) {
-  const provider = await Provider.findOne({
-    where: {
-      email,
-      ...(roleId ? { role_id: roleId } : {}),
+  try {
+    const provider = await Provider.findOne({
+      where: {
+        email,
+        ...(roleId ? { role_id: roleId } : {}),
+      }
+    });
+
+    if (!provider || !provider.password_hash) {
+      return null;
     }
-  });
 
-  if (!provider || !provider.password_hash) {
-    return null;
+    const isValid = await encryptor.verifyPassword(password, provider.password_hash);
+    if (!isValid) {
+      return null;
+    }
+
+    return sanitizeProvider(provider);
+  } catch (error) {
+    console.error('Error in authenticateProvider service:', error);
+    throw error;
   }
-
-  const isValid = await encryptor.verifyPassword(password, provider.password_hash);
-  if (!isValid) {
-    return null;
-  }
-
-  return sanitizeProvider(provider);
 }
 
 module.exports = {
