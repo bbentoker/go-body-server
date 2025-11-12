@@ -4,12 +4,14 @@ const UserModel = require('./user');
 const ProviderModel = require('./provider');
 const ServiceModel = require('./service');
 const ProviderServiceRelationModel = require('./providerServiceRelation');
+const ProviderRoleModel = require('./providerRole');
 const ReservationModel = require('./reservation');
 
 const User = UserModel(sequelize);
 const Provider = ProviderModel(sequelize);
 const Service = ServiceModel(sequelize);
 const ProviderServiceRelation = ProviderServiceRelationModel(sequelize);
+const ProviderRole = ProviderRoleModel(sequelize);
 const Reservation = ReservationModel(sequelize);
 
 User.hasMany(Reservation, {
@@ -61,11 +63,21 @@ ProviderServiceRelation.belongsTo(Service, {
   as: 'service',
 });
 
+ProviderRole.hasMany(Provider, {
+  foreignKey: 'role_id',
+  as: 'providers',
+});
+Provider.belongsTo(ProviderRole, {
+  foreignKey: 'role_id',
+  as: 'role',
+});
+
 module.exports = {
   sequelize,
   User,
   Provider,
   Service,
+  ProviderRole,
   ProviderServiceRelation,
   Reservation,
 };

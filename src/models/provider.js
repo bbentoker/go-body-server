@@ -28,11 +28,22 @@ module.exports = (sequelize) => {
       phone_number: {
         type: DataTypes.STRING(50),
       },
+      password_hash: {
+        type: DataTypes.STRING(255),
+      },
       title: {
         type: DataTypes.STRING(100),
       },
       bio: {
         type: DataTypes.TEXT,
+      },
+      role_id: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        references: {
+          model: 'provider_roles',
+          key: 'role_id',
+        },
       },
       is_active: {
         type: DataTypes.BOOLEAN,

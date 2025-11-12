@@ -2,8 +2,9 @@
 -- mevcut tabloları (ve bağlı olanları) temizle.
 DROP TABLE IF EXISTS reservations CASCADE;
 DROP TABLE IF EXISTS provider_services_relation CASCADE;
-DROP TABLE IF EXISTS services CASCADE;
 DROP TABLE IF EXISTS providers CASCADE;
+DROP TABLE IF EXISTS provider_roles CASCADE;
+DROP TABLE IF EXISTS services CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- 1. 'users' (Müşteriler / Hizmeti Alanlar)
@@ -18,21 +19,64 @@ CREATE TABLE users (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 2. 'providers' (Hizmet Sağlayıcılar / Çalışanlar)
--- Hizmeti fiilen gerçekleştiren kişi (doktor, stilist, vb.).
+-- 2. 'provider_roles' (Sağlayıcı Rolleri)
+-- Sağlayıcı rollerinin tanımları (örn. "admin", "worker").
+CREATE TABLE provider_roles (
+    role_id BIGSERIAL PRIMARY KEY,
+    role_name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ
+);
+
+-- Varsayılan roller (betik tekrar çalıştırılınca temizlenip yeniden eklenir).
+INSERT INTO provider_roles (role_name, description)
+VALUES 
+    ('admin', 'Administrative provider role with elevated privileges'),
+    ('worker', 'Standard provider role');
+
+-- 3. 'providers' (Hizmet Sağlayıcılar / Çalışanlar)
+-- Hizmeti fiilen gerçekleştiren kişi (doktor, stilist, vb. ).
 CREATE TABLE providers (
     provider_id BIGSERIAL PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     phone_number VARCHAR(50),
+    password_hash VARCHAR(255), -- Sosyal girişler vb. için NULL olabilir
     title VARCHAR(100), -- Örn: "Kıdemli Terapist"
     bio TEXT, -- Profil sayfasında gösterim için
+    role_id BIGINT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true, -- Artık çalışmıyorsa false yapılır
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT fk_provider_role
+        FOREIGN KEY (role_id)
+        REFERENCES provider_roles(role_id)
+        ON DELETE RESTRICT
 );
 
--- 3. 'services' (Hizmetler)
+INSERT INTO providers (
+    first_name,
+    last_name,
+    email,
+    phone_number,
+    password_hash,
+    title,
+    bio,
+    role_id
+) VALUES (
+    'Admin',
+    'User',
+    'admin@admin.com',
+    NULL,
+    NULL,
+    'System Administrator',
+    'Seed admin provider account.',
+    1
+);
+
+-- 4. 'services' (Hizmetler)
 -- Sunulan hizmetler (60dk, 75dk, 90dk vb.).
 CREATE TABLE services (
     service_id BIGSERIAL PRIMARY KEY,
@@ -45,7 +89,7 @@ CREATE TABLE services (
                                                    -- bir sağlayıcı gerektirmeyebilir.
 );
 
--- 4. 'provider_services_relation' (Bağlantı Tablosu)
+-- 5. 'provider_services_relation' (Bağlantı Tablosu)
 -- Hangi sağlayıcının hangi hizmetleri verebildiğini belirler.
 CREATE TABLE provider_services_relation (
     provider_id BIGINT NOT NULL,
@@ -66,7 +110,7 @@ CREATE TABLE provider_services_relation (
     PRIMARY KEY (provider_id, service_id)
 );
 
--- 5. 'reservations' (Rezervasyonlar)
+-- 6. 'reservations' (Rezervasyonlar)
 -- Tüm parçaları birleştiren ana tablo.
 CREATE TABLE reservations (
     reservation_id BIGSERIAL PRIMARY KEY,
@@ -119,10 +163,13 @@ CREATE TABLE reservations (
 CREATE INDEX idx_reservations_provider_time 
 ON reservations (provider_id, start_time, end_time);
 
--- Bir müşterinin tüm rezervasyonlarını hızla bulmak için.
 CREATE INDEX idx_reservations_user_id 
 ON reservations (user_id);
 
 -- Hangi sağlayıcıların belirli bir hizmeti verdiğini hızla bulmak için.
 CREATE INDEX idx_provider_services_relation_service_id 
 ON provider_services_relation (service_id);
+
+-- Sağlayıcıların rollerine göre filtreleme için.
+CREATE INDEX idx_providers_role_id 
+ON providers (role_id);

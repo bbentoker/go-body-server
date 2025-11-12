@@ -1,4 +1,4 @@
-const { Provider, Service, Reservation } = require('../models');
+const { Provider, Service, Reservation, ProviderRole } = require('../models');
 
 const defaultProviderInclude = [
   {
@@ -9,6 +9,10 @@ const defaultProviderInclude = [
   {
     model: Reservation,
     as: 'reservations',
+  },
+  {
+    model: ProviderRole,
+    as: 'role',
   },
 ];
 
