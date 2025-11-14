@@ -7,6 +7,7 @@ const ProviderServiceRelationModel = require('./providerServiceRelation');
 const ProviderRoleModel = require('./providerRole');
 const ReservationModel = require('./reservation');
 const RefreshTokenModel = require('./refreshToken');
+const LanguageModel = require('./language');
 
 const User = UserModel(sequelize);
 const Provider = ProviderModel(sequelize);
@@ -15,6 +16,7 @@ const ProviderServiceRelation = ProviderServiceRelationModel(sequelize);
 const ProviderRole = ProviderRoleModel(sequelize);
 const Reservation = ReservationModel(sequelize);
 const RefreshToken = RefreshTokenModel(sequelize);
+const Language = LanguageModel(sequelize);
 
 User.hasMany(Reservation, {
   foreignKey: 'user_id',
@@ -92,6 +94,24 @@ RefreshToken.belongsTo(Provider, {
   as: 'provider',
 });
 
+Language.hasMany(User, {
+  foreignKey: 'language_id',
+  as: 'users',
+});
+User.belongsTo(Language, {
+  foreignKey: 'language_id',
+  as: 'language',
+});
+
+Language.hasMany(Provider, {
+  foreignKey: 'language_id',
+  as: 'providers',
+});
+Provider.belongsTo(Language, {
+  foreignKey: 'language_id',
+  as: 'language',
+});
+
 module.exports = {
   sequelize,
   User,
@@ -101,5 +121,6 @@ module.exports = {
   ProviderServiceRelation,
   Reservation,
   RefreshToken,
+  Language,
 };
 

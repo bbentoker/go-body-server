@@ -55,6 +55,15 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: false,
       },
+      language_id: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        defaultValue: 4, // Turkish (tr) as default
+        references: {
+          model: 'languages',
+          key: 'language_id',
+        },
+      },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,

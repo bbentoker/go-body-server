@@ -7,8 +7,28 @@ DROP TABLE IF EXISTS providers CASCADE;
 DROP TABLE IF EXISTS provider_roles CASCADE;
 DROP TABLE IF EXISTS services CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS languages CASCADE;
 
--- 1. 'users' (Müşteriler / Hizmeti Alanlar)
+-- 1. 'languages' (Diller)
+-- Kullanıcı ve sağlayıcı tercih edilen diller.
+CREATE TABLE languages (
+    language_id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(10) NOT NULL UNIQUE, -- ISO 639-1 code (en, tr, es, etc.)
+    name VARCHAR(100) NOT NULL, -- English name
+    native_name VARCHAR(100) NOT NULL, -- Native name (Türkçe, English, etc.)
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Yaygın dilleri ekle (Turkish default olacak)
+INSERT INTO languages (language_id, code, name, native_name) VALUES
+    (1, 'en', 'English', 'English'),
+    (2, 'es', 'Spanish', 'Español'),
+    (3, 'zh', 'Chinese', '中文'),
+    (4, 'tr', 'Turkish', 'Türkçe'),
+    (5, 'ar', 'Arabic', 'العربية');
+
+-- 2. 'users' (Müşteriler / Hizmeti Alanlar)
 -- Rezervasyonu yapan veya hizmeti alan kişi.
 CREATE TABLE users (
     user_id BIGSERIAL PRIMARY KEY,  
@@ -18,10 +38,16 @@ CREATE TABLE users (
     phone_number VARCHAR(50),
     password_hash VARCHAR(255), -- Sosyal girişler vb. için NULL olabilir
     is_verified BOOLEAN NOT NULL DEFAULT false, -- Email verification status
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    language_id BIGINT NOT NULL DEFAULT 4, -- Turkish as default
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    
+    CONSTRAINT fk_user_language
+        FOREIGN KEY (language_id)
+        REFERENCES languages(language_id)
+        ON DELETE RESTRICT
 );
 
--- 2. 'provider_roles' (Sağlayıcı Rolleri)
+-- 3. 'provider_roles' (Sağlayıcı Rolleri)
 -- Sağlayıcı rollerinin tanımları (örn. "admin", "worker").
 CREATE TABLE provider_roles (
     role_id BIGSERIAL PRIMARY KEY,
@@ -37,7 +63,7 @@ VALUES
     ('admin', 'Administrative provider role with elevated privileges'),
     ('worker', 'Standard provider role');
 
--- 3. 'providers' (Hizmet Sağlayıcılar / Çalışanlar)
+-- 4. 'providers' (Hizmet Sağlayıcılar / Çalışanlar)
 -- Hizmeti fiilen gerçekleştiren kişi (doktor, stilist, vb. ).
 CREATE TABLE providers (
     provider_id BIGSERIAL PRIMARY KEY,
@@ -51,11 +77,17 @@ CREATE TABLE providers (
     role_id BIGINT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true, -- Artık çalışmıyorsa false yapılır
     is_verified BOOLEAN NOT NULL DEFAULT false, -- Email verification status
+    language_id BIGINT NOT NULL DEFAULT 4, -- Turkish as default
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_provider_role
         FOREIGN KEY (role_id)
         REFERENCES provider_roles(role_id)
+        ON DELETE RESTRICT,
+        
+    CONSTRAINT fk_provider_language
+        FOREIGN KEY (language_id)
+        REFERENCES languages(language_id)
         ON DELETE RESTRICT
 );
 
@@ -79,7 +111,7 @@ INSERT INTO providers (
     1
 );
 
--- 4. 'services' (Hizmetler)
+-- 5. 'services' (Hizmetler)
 -- Sunulan hizmetler (60dk, 75dk, 90dk vb.).
 CREATE TABLE services (
     service_id BIGSERIAL PRIMARY KEY,
@@ -92,7 +124,7 @@ CREATE TABLE services (
                                                    -- bir sağlayıcı gerektirmeyebilir.
 );
 
--- 5. 'provider_services_relation' (Bağlantı Tablosu)
+-- 6. 'provider_services_relation' (Bağlantı Tablosu)
 -- Hangi sağlayıcının hangi hizmetleri verebildiğini belirler.
 CREATE TABLE provider_services_relation (
     provider_id BIGINT NOT NULL,
@@ -113,7 +145,7 @@ CREATE TABLE provider_services_relation (
     PRIMARY KEY (provider_id, service_id)
 );
 
--- 6. 'reservations' (Rezervasyonlar)
+-- 7. 'reservations' (Rezervasyonlar)
 -- Tüm parçaları birleştiren ana tablo.
 CREATE TABLE reservations (
     reservation_id BIGSERIAL PRIMARY KEY,
@@ -157,7 +189,7 @@ CREATE TABLE reservations (
     CONSTRAINT check_time_order CHECK (end_time > start_time)
 );
 
--- 7. 'refresh_tokens' (Yenileme Token'ları)
+-- 8. 'refresh_tokens' (Yenileme Token'ları)
 -- Kullanıcı ve sağlayıcı oturum yönetimi için refresh token'ları saklar.
 CREATE TABLE refresh_tokens (
     token_id BIGSERIAL PRIMARY KEY,
@@ -221,3 +253,11 @@ ON refresh_tokens (provider_id);
 -- Süresi dolmuş token'ları temizlemek için.
 CREATE INDEX idx_refresh_tokens_expires_at 
 ON refresh_tokens (expires_at);
+
+-- Kullanıcıların dil tercihlerine göre filtreleme için.
+CREATE INDEX idx_users_language_id 
+ON users (language_id);
+
+-- Sağlayıcıların dil tercihlerine göre filtreleme için.
+CREATE INDEX idx_providers_language_id 
+ON providers (language_id);
