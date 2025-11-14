@@ -6,6 +6,9 @@ const router = express.Router();
 // Get reservations by date range (index route)
 router.get('/index', reservationController.getReservationsByDateRange);
 
+// Get public reservations by date range (sanitized, no sensitive data)
+router.get('/public', reservationController.getPublicReservationsByDateRange);
+
 // Create a new reservation
 router.post('/', reservationController.createReservation);
 

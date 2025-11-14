@@ -8,6 +8,13 @@ All endpoints are prefixed with: `/reservations`
 
 ---
 
+## Public vs Private Endpoints
+
+- **Public Endpoint** (`/reservations/public`): Sanitized data without sensitive user information. See [Public API Documentation](./public-reservations-api.md)
+- **Private Endpoints**: All other endpoints require authentication and return full data
+
+---
+
 ## Endpoints
 
 ### 1. Get Reservations by Date Range (Index)

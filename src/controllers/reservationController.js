@@ -186,6 +186,116 @@ async function getReservationsByDateRange(req, res) {
 }
 
 /**
+ * Get reservations by date range (public route - sanitized data)
+ */
+async function getPublicReservationsByDateRange(req, res) {
+  try {
+    const { start_date, end_date, provider_id } = req.query;
+    
+    let startDate, endDate;
+    
+    if (start_date && end_date) {
+      // Parse provided dates
+      startDate = new Date(start_date);
+      startDate.setHours(0, 0, 0, 0); // Start of day
+      
+      endDate = new Date(end_date);
+      endDate.setHours(23, 59, 59, 999); // End of day
+      
+      // Validate dates
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ error: 'Invalid date format' });
+      }
+      
+      if (startDate > endDate) {
+        return res.status(400).json({ error: 'start_date must be before or equal to end_date' });
+      }
+    } else {
+      // Default to current week (Monday to Sunday)
+      const weekRange = getCurrentWeekRange();
+      startDate = weekRange.start;
+      endDate = weekRange.end;
+    }
+    
+    // Build where clause - only confirmed/completed reservations for public view
+    const whereClause = {
+      start_time: {
+        [Op.between]: [startDate, endDate],
+      },
+      status: {
+        [Op.in]: ['confirmed', 'completed'],
+      },
+    };
+    
+    // Add optional filter for provider
+    if (provider_id) whereClause.provider_id = provider_id;
+    
+    const reservations = await reservationService.getReservations({
+      where: whereClause,
+      includeRelations: true,
+      order: [['start_time', 'ASC']],
+    });
+    
+    // Sanitize reservation data - remove sensitive information
+    const sanitizedReservations = reservations.map(reservation => {
+      const res = reservation.toJSON ? reservation.toJSON() : reservation;
+      
+      return {
+        reservation_id: res.reservation_id,
+        provider_id: res.provider_id,
+        service_id: res.service_id,
+        start_time: res.start_time,
+        end_time: res.end_time,
+        status: res.status,
+        provider: res.provider ? {
+          provider_id: res.provider.provider_id,
+          first_name: res.provider.first_name,
+          last_name: res.provider.last_name,
+          title: res.provider.title,
+        } : null,
+        service: res.service ? {
+          service_id: res.service.service_id,
+          name: res.service.name,
+          description: res.service.description,
+          duration_minutes: res.service.duration_minutes,
+          price: res.service.price,
+        } : null,
+      };
+    });
+    
+    // Fetch all active services (public info)
+    const allServices = await serviceService.getServices({
+      where: { is_active: true },
+    });
+    
+    // Sanitize services (remove any internal fields if needed)
+    const sanitizedServices = allServices.map(service => {
+      const s = service.toJSON ? service.toJSON() : service;
+      return {
+        service_id: s.service_id,
+        name: s.name,
+        description: s.description,
+        duration_minutes: s.duration_minutes,
+        price: s.price,
+      };
+    });
+    
+    res.json({
+      date_range: {
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+      },
+      count: sanitizedReservations.length,
+      reservations: sanitizedReservations,
+      services: sanitizedServices,
+    });
+  } catch (error) {
+    console.error('Error fetching public reservations by date range:', error);
+    res.status(500).json({ error: 'Failed to fetch reservations' });
+  }
+}
+
+/**
  * Create a new reservation
  */
 async function createReservation(req, res) {
@@ -461,6 +571,7 @@ module.exports = {
   getReservations,
   getReservationById,
   getReservationsByDateRange,
+  getPublicReservationsByDateRange,
   updateReservation,
   deleteReservation,
 };
