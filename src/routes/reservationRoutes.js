@@ -1,0 +1,25 @@
+const express = require('express');
+const reservationController = require('../controllers/reservationController');
+
+const router = express.Router();
+
+// Get reservations by date range (index route)
+router.get('/index', reservationController.getReservationsByDateRange);
+
+// Create a new reservation
+router.post('/', reservationController.createReservation);
+
+// Get all reservations (with optional filters)
+router.get('/', reservationController.getReservations);
+
+// Get a specific reservation by ID
+router.get('/:id', reservationController.getReservationById);
+
+// Update a reservation
+router.put('/:id', reservationController.updateReservation);
+
+// Delete a reservation
+router.delete('/:id', reservationController.deleteReservation);
+
+module.exports = router;
+
