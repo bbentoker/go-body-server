@@ -1,5 +1,6 @@
 const express = require('express');
 const reservationController = require('../controllers/reservationController');
+const { authenticateToken, authorizeUser } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -14,6 +15,9 @@ router.post('/', reservationController.createReservation);
 
 // Get all reservations (with optional filters)
 router.get('/', reservationController.getReservations);
+
+// Get all reservations for a specific user (protected route)
+router.get('/user/:userId', authenticateToken, authorizeUser, reservationController.getUserReservations);
 
 // Get a specific reservation by ID
 router.get('/:id', reservationController.getReservationById);

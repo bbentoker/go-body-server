@@ -311,7 +311,164 @@ GET /reservations?limit=10&offset=0
 
 ---
 
-### 4. Get Reservation by ID
+### 4. Get User's All Reservations
+Retrieves all reservations for a specific user with optional filters. **Protected route - requires authentication.**
+
+**Endpoint:** `GET /reservations/user/:userId`
+
+**Authentication:** Required (Bearer Token)
+
+**Authorization:** Users can only access their own reservations
+
+**URL Parameters:**
+- `userId` (required) - User ID
+
+**Query Parameters:**
+- `provider_id` (optional) - Filter by provider ID
+- `service_id` (optional) - Filter by service ID
+- `status` (optional) - Filter by status (pending, confirmed, cancelled, completed, no_show)
+- `limit` (optional) - Limit number of results
+- `offset` (optional) - Offset for pagination
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Example Requests:**
+```
+GET /reservations/user/1
+GET /reservations/user/1?status=confirmed
+GET /reservations/user/1?provider_id=2&status=pending
+GET /reservations/user/1?limit=10&offset=0
+GET /reservations/user/1?service_id=3
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Success Response (200 OK):**
+```json
+[
+  {
+    "reservation_id": 3,
+    "user_id": 1,
+    "provider_id": 1,
+    "service_id": 2,
+    "start_time": "2024-11-20T14:00:00.000Z",
+    "end_time": "2024-11-20T15:00:00.000Z",
+    "status": "confirmed",
+    "total_price": "60.00",
+    "notes": "Upcoming appointment",
+    "created_at": "2024-11-13T10:00:00.000Z",
+    "updated_at": "2024-11-13T10:00:00.000Z",
+    "user": {
+      "user_id": 1,
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john@example.com"
+    },
+    "provider": {
+      "provider_id": 1,
+      "first_name": "Jane",
+      "last_name": "Smith",
+      "title": "Senior Therapist"
+    },
+    "service": {
+      "service_id": 2,
+      "name": "Swedish Massage",
+      "duration_minutes": 60,
+      "price": "60.00"
+    }
+  },
+  {
+    "reservation_id": 2,
+    "user_id": 1,
+    "provider_id": 1,
+    "service_id": 1,
+    "start_time": "2024-11-15T09:00:00.000Z",
+    "end_time": "2024-11-15T10:30:00.000Z",
+    "status": "completed",
+    "total_price": "75.00",
+    "notes": "Past appointment",
+    "created_at": "2024-11-10T10:00:00.000Z",
+    "updated_at": "2024-11-15T11:00:00.000Z",
+    "user": {
+      "user_id": 1,
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john@example.com"
+    },
+    "provider": {
+      "provider_id": 1,
+      "first_name": "Jane",
+      "last_name": "Smith",
+      "title": "Senior Therapist"
+    },
+    "service": {
+      "service_id": 1,
+      "name": "Deep Tissue Massage",
+      "duration_minutes": 90,
+      "price": "75.00"
+    }
+  }
+]
+```
+
+**Notes:**
+- Returns array of reservations for the specified user
+- Sorted by start_time in descending order (most recent first)
+- Includes full user, provider, and service details
+- Returns empty array `[]` if user has no reservations
+- Supports pagination with `limit` and `offset` parameters
+- Can filter by provider, service, or status
+- Response format matches the general `/reservations` endpoint
+
+**Error Responses:**
+
+- **400 Bad Request** - Missing user ID
+```json
+{
+  "error": "User ID is required"
+}
+```
+
+- **401 Unauthorized** - Missing or invalid token
+```json
+{
+  "error": "Access token required"
+}
+```
+
+- **403 Forbidden** - Invalid or expired token
+```json
+{
+  "error": "Invalid or expired token"
+}
+```
+
+- **403 Forbidden** - Attempting to access another user's data
+```json
+{
+  "error": "Access denied. You can only access your own reservations."
+}
+```
+
+- **403 Forbidden** - Provider trying to access user endpoint
+```json
+{
+  "error": "Access denied. User account required."
+}
+```
+
+- **500 Internal Server Error**
+```json
+{
+  "error": "Failed to fetch user reservations"
+}
+```
+
+---
+
+### 5. Get Reservation by ID
 Retrieves a single reservation by its ID.
 
 **Endpoint:** `GET /reservations/:id`
@@ -366,7 +523,7 @@ GET /reservations/1
 
 ---
 
-### 5. Update Reservation
+### 6. Update Reservation
 Updates an existing reservation.
 
 **Endpoint:** `PUT /reservations/:id`
@@ -430,7 +587,7 @@ Updates an existing reservation.
 
 ---
 
-### 6. Delete Reservation
+### 7. Delete Reservation
 Deletes a reservation permanently.
 
 **Endpoint:** `DELETE /reservations/:id`

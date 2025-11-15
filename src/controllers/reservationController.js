@@ -416,6 +416,39 @@ async function getReservations(req, res) {
 }
 
 /**
+ * Get all reservations for a specific user
+ */
+async function getUserReservations(req, res) {
+  try {
+    const { userId } = req.params;
+    const { provider_id, service_id, status, limit, offset } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // Build where clause with user_id and optional filters
+    const whereClause = { user_id: userId };
+    if (provider_id) whereClause.provider_id = provider_id;
+    if (service_id) whereClause.service_id = service_id;
+    if (status) whereClause.status = status;
+
+    const reservations = await reservationService.getReservations({
+      where: whereClause,
+      includeRelations: true,
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined,
+      order: [['start_time', 'DESC']], // Most recent first
+    });
+
+    res.json(reservations);
+  } catch (error) {
+    console.error('Error fetching user reservations:', error);
+    res.status(500).json({ error: 'Failed to fetch user reservations' });
+  }
+}
+
+/**
  * Get a single reservation by ID
  */
 async function getReservationById(req, res) {
@@ -570,6 +603,7 @@ module.exports = {
   createReservation,
   getReservations,
   getReservationById,
+  getUserReservations,
   getReservationsByDateRange,
   getPublicReservationsByDateRange,
   updateReservation,
