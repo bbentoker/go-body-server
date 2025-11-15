@@ -13,12 +13,13 @@ Example: `POST BASE_URL/auth/admin/login`
 - [Provider Login Routes](#provider-login-routes)
   - [Admin Provider Login](#1-admin-provider-login)
   - [Worker Provider Login](#2-worker-provider-login)
-- [User Login Route](#user-login-route)
-  - [User Login](#3-user-login)
+- [User Routes](#user-routes)
+  - [User Registration](#3-user-registration)
+  - [User Login](#4-user-login)
 - [Token Management Routes](#token-management-routes)
-  - [Refresh Token](#4-refresh-token)
-  - [Logout](#5-logout)
-  - [Logout All Sessions](#6-logout-all-sessions)
+  - [Refresh Token](#5-refresh-token)
+  - [Logout](#6-logout)
+  - [Logout All Sessions](#7-logout-all-sessions)
 
 ---
 
@@ -148,9 +149,104 @@ Login endpoint for providers with standard worker privileges.
 
 ---
 
-## User Login Route
+## User Routes
 
-### 3. User Login
+### 3. User Registration
+
+**Endpoint:** `POST /auth/user/register`
+
+**Description:** Registers a new user and returns access tokens.
+
+**Request Body:**
+```json
+{
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john@example.com",
+  "password": "securepassword123",
+  "phone_number": "+1234567890",
+  "language_id": 4
+}
+```
+
+**Required Fields:**
+- `first_name` (string): User's first name
+- `last_name` (string): User's last name
+- `email` (string): Valid email address
+- `password` (string): Password (minimum 6 characters)
+
+**Optional Fields:**
+- `phone_number` (string): Phone number
+- `language_id` (number): Language preference (default: 4 for Turkish)
+
+**Success Response (201 Created):**
+```json
+{
+  "message": "User registered successfully",
+  "user": {
+    "user_id": 1,
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john@example.com",
+    "phone_number": "+1234567890",
+    "is_verified": false,
+    "language_id": 4,
+    "created_at": "2024-11-15T10:00:00.000Z"
+  },
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Error Responses:**
+
+- **400 Bad Request** - Missing required fields
+```json
+{
+  "message": "First name, last name, email, and password are required"
+}
+```
+
+- **400 Bad Request** - Invalid email format
+```json
+{
+  "message": "Invalid email format"
+}
+```
+
+- **400 Bad Request** - Weak password
+```json
+{
+  "message": "Password must be at least 6 characters long"
+}
+```
+
+- **409 Conflict** - Email already exists
+```json
+{
+  "message": "User with this email already exists"
+}
+```
+
+- **500 Internal Server Error** - Server error
+```json
+{
+  "message": "Failed to create user"
+}
+```
+
+**Notes:**
+- User is automatically logged in after successful registration
+- Password is hashed before storage (never stored in plain text)
+- Returns both access token and refresh token
+- Default language is Turkish (language_id = 4) if not specified
+- User account is created with `is_verified: false`
+
+For detailed registration guide with examples, see [User Registration Guide](./user-registration-guide.md)
+
+---
+
+### 4. User Login
 
 Login endpoint for regular users/customers.
 
@@ -210,7 +306,7 @@ Login endpoint for regular users/customers.
 
 ## Token Management Routes
 
-### 4. Refresh Token
+### 5. Refresh Token
 
 Generate a new access token using a valid refresh token.
 
@@ -257,7 +353,7 @@ Generate a new access token using a valid refresh token.
 
 ---
 
-### 5. Logout
+### 6. Logout
 
 Logout from a specific session by revoking a refresh token.
 
@@ -303,7 +399,7 @@ Logout from a specific session by revoking a refresh token.
 
 ---
 
-### 6. Logout All Sessions
+### 7. Logout All Sessions
 
 Logout from all active sessions for a user or provider.
 

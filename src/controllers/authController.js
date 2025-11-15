@@ -82,6 +82,62 @@ const loginWorkerProvider = asyncHandler(async (req, res) => {
   });
 });
 
+const registerUser = asyncHandler(async (req, res) => {
+  const { first_name, last_name, email, password, phone_number, language_id } = req.body;
+
+  // Validate required fields
+  if (!first_name || !last_name || !email || !password) {
+    return res.status(400).json({ 
+      message: 'First name, last name, email, and password are required' 
+    });
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: 'Invalid email format' });
+  }
+
+  // Validate password strength (minimum 6 characters)
+  if (password.length < 6) {
+    return res.status(400).json({ 
+      message: 'Password must be at least 6 characters long' 
+    });
+  }
+
+  // Check if user already exists
+  const existingUser = await userService.getUserByEmail(email);
+  if (existingUser) {
+    return res.status(409).json({ message: 'User with this email already exists' });
+  }
+
+  // Create user
+  const userData = {
+    first_name,
+    last_name,
+    email,
+    password,
+    phone_number,
+    language_id: language_id || 4, // Default to Turkish if not provided
+    is_verified: false,
+  };
+
+  const user = await userService.createUser(userData);
+  
+  if (!user) {
+    return res.status(500).json({ message: 'Failed to create user' });
+  }
+
+  // Generate tokens
+  const tokens = await authService.generateTokenPair(user, 'user');
+  
+  return res.status(201).json({
+    message: 'User registered successfully',
+    user,
+    ...tokens,
+  });
+});
+
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -151,6 +207,7 @@ const logoutAll = asyncHandler(async (req, res) => {
 module.exports = {
   loginAdminProvider,
   loginWorkerProvider,
+  registerUser,
   loginUser,
   refreshToken,
   logout,

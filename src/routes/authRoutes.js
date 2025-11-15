@@ -7,7 +7,8 @@ const router = express.Router();
 router.post('/admin/login', authController.loginAdminProvider);
 router.post('/worker/login', authController.loginWorkerProvider);
 
-// User login route
+// User registration and login routes
+router.post('/user/register', authController.registerUser);
 router.post('/user/login', authController.loginUser);
 
 // Token management routes
