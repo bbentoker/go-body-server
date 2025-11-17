@@ -152,11 +152,46 @@ const deleteUser = asyncHandler(async (req, res) => {
   }
 });
 
+const updateOwnProfile = asyncHandler(async (req, res) => {
+  try {
+    // Ensure the user is authenticated and is a user type (not provider)
+    if (!req.user || req.user.type !== 'user') {
+      return res.status(403).json({ 
+        message: 'Access denied. User account required.' 
+      });
+    }
+
+    const { payload } = extractUserPayload(req.body, {}, { includeNull: false });
+
+    if (Object.keys(payload).length === 0) {
+      return res.status(400).json({
+        message: 'No valid fields provided for update',
+      });
+    }
+
+    // Use the authenticated user's ID from the token
+    const user = await userService.updateUser(req.user.id, payload);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.json(user);
+  } catch (error) {
+    console.error('Error in updateOwnProfile controller:', error);
+    return res.status(500).json({
+      message: 'Failed to update profile',
+      error: error.message,
+    });
+  }
+});
+
 module.exports = {
   createUser,
   listUsers,
   getUserById,
   updateUser,
   deleteUser,
+  updateOwnProfile,
 };
 
