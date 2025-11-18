@@ -27,6 +27,8 @@ INSERT INTO languages (language_id, code, name, native_name) VALUES
     (3, 'zh', 'Chinese', '中文'),
     (4, 'tr', 'Turkish', 'Türkçe'),
     (5, 'ar', 'Arabic', 'العربية');
+    (6, 'ru', 'Russian', 'Русский'),
+    (7, 'id', 'Indonesian', 'Bahasa Indonesia');
 
 -- 2. 'users' (Müşteriler / Hizmeti Alanlar)
 -- Rezervasyonu yapan veya hizmeti alan kişi.
