@@ -4,7 +4,7 @@ const { RefreshToken } = require('../models');
 const {
   JWT_ACCESS_SECRET = 'change_this_access_secret',
   JWT_REFRESH_SECRET = 'change_this_refresh_secret',
-  JWT_ACCESS_EXPIRY = '15m',
+  JWT_ACCESS_EXPIRY = '60m',
   JWT_REFRESH_EXPIRY_DAYS = '7',
 } = process.env;
 
