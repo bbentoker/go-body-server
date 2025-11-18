@@ -1,6 +1,7 @@
 const reservationService = require('../services/reservationService');
 const serviceService = require('../services/serviceService');
 const userService = require('../services/userService');
+const providerService = require('../services/providerService');
 const { Op } = require('sequelize');
 
 /**
@@ -280,6 +281,25 @@ async function getPublicReservationsByDateRange(req, res) {
       };
     });
     
+    // Fetch all providers (public info)
+    const allProviders = await providerService.getProviders();
+    
+    // Sanitize providers (show only public information)
+    const sanitizedProviders = allProviders.map(provider => {
+      const p = provider.toJSON ? provider.toJSON() : provider;
+      return {
+        provider_id: p.provider_id,
+        first_name: p.first_name,
+        last_name: p.last_name,
+        title: p.title,
+        email: p.email,
+        phone: p.phone,
+        bio: p.bio,
+        profile_image_url: p.profile_image_url,
+        is_active: p.is_active,
+      };
+    });
+    
     res.json({
       date_range: {
         start: startDate.toISOString(),
@@ -288,6 +308,7 @@ async function getPublicReservationsByDateRange(req, res) {
       count: sanitizedReservations.length,
       reservations: sanitizedReservations,
       services: sanitizedServices,
+      providers: sanitizedProviders,
     });
   } catch (error) {
     console.error('Error fetching public reservations by date range:', error);
@@ -449,6 +470,39 @@ async function getUserReservations(req, res) {
 }
 
 /**
+ * Get all reservations for the authenticated user (from token)
+ */
+async function getMyReservations(req, res) {
+  try {
+    // Get user_id from authenticated user
+    const userId = req.user.id;
+    const { provider_id, service_id, status, limit, offset } = req.query;
+
+    // Build where clause with user_id and optional filters
+    const whereClause = { user_id: userId };
+    if (provider_id) whereClause.provider_id = provider_id;
+    if (service_id) whereClause.service_id = service_id;
+    if (status) whereClause.status = status;
+
+    const reservations = await reservationService.getReservations({
+      where: whereClause,
+      includeRelations: true,
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined,
+      order: [['start_time', 'DESC']], // Most recent first
+    });
+
+    res.json({
+      count: reservations.length,
+      reservations: reservations,
+    });
+  } catch (error) {
+    console.error('Error fetching user reservations:', error);
+    res.status(500).json({ error: 'Failed to fetch user reservations' });
+  }
+}
+
+/**
  * Get a single reservation by ID
  */
 async function getReservationById(req, res) {
@@ -599,14 +653,309 @@ async function deleteReservation(req, res) {
   }
 }
 
+/**
+ * Get pending reservations
+ * Optionally filter by provider_id, user_id, or service_id
+ */
+async function getPendingReservations(req, res) {
+  try {
+    const { provider_id, user_id, service_id, limit, offset } = req.query;
+    
+    // Build where clause for pending reservations
+    const whereClause = {
+      status: 'pending',
+    };
+    
+    // Add optional filters
+    if (provider_id) whereClause.provider_id = provider_id;
+    if (user_id) whereClause.user_id = user_id;
+    if (service_id) whereClause.service_id = service_id;
+    
+    // Get pending reservations
+    const pendingReservations = await reservationService.getReservations({
+      where: whereClause,
+      includeRelations: true,
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined,
+      order: [['start_time', 'ASC']],
+    });
+    
+    res.json({
+      count: pendingReservations.length,
+      reservations: pendingReservations,
+    });
+  } catch (error) {
+    console.error('Error fetching pending reservations:', error);
+    res.status(500).json({ error: 'Failed to fetch pending reservations' });
+  }
+}
+
+/**
+ * Get pending reservations count
+ * Optionally filter by provider_id
+ */
+async function getPendingReservationsCount(req, res) {
+  try {
+    const { provider_id } = req.query;
+    
+    // Build where clause for pending reservations
+    const whereClause = {
+      status: 'pending',
+    };
+    
+    // Add provider filter if specified
+    if (provider_id) {
+      whereClause.provider_id = provider_id;
+    }
+    
+    // Get all pending reservations
+    const pendingReservations = await reservationService.getReservations({
+      where: whereClause,
+      includeRelations: true,
+      order: [['start_time', 'ASC']],
+    });
+    
+    // Calculate total count
+    const totalCount = pendingReservations.length;
+    
+    // Group counts by provider if no specific provider is requested
+    let countsByProvider = [];
+    if (!provider_id) {
+      const providerCounts = {};
+      
+      pendingReservations.forEach(reservation => {
+        const pId = reservation.provider_id;
+        if (!providerCounts[pId]) {
+          providerCounts[pId] = {
+            provider_id: pId,
+            count: 0,
+            provider: reservation.provider ? {
+              provider_id: reservation.provider.provider_id,
+              first_name: reservation.provider.first_name,
+              last_name: reservation.provider.last_name,
+              title: reservation.provider.title,
+            } : null,
+          };
+        }
+        providerCounts[pId].count++;
+      });
+      
+      countsByProvider = Object.values(providerCounts);
+    }
+    
+    res.json({
+      total_count: totalCount,
+      provider_id: provider_id ? parseInt(provider_id) : null,
+      counts_by_provider: provider_id ? undefined : countsByProvider,
+      reservations: pendingReservations,
+    });
+  } catch (error) {
+    console.error('Error fetching pending reservations count:', error);
+    res.status(500).json({ error: 'Failed to fetch pending reservations count' });
+  }
+}
+
+/**
+ * Approve a pending reservation (change status to confirmed)
+ */
+async function approveReservation(req, res) {
+  try {
+    const { id } = req.params;
+
+    // Fetch existing reservation
+    const existingReservation = await reservationService.getReservationById(id);
+    if (!existingReservation) {
+      return res.status(404).json({ error: 'Reservation not found' });
+    }
+
+    // Check if reservation is pending
+    if (existingReservation.status !== 'pending') {
+      return res.status(400).json({ 
+        error: `Cannot approve reservation with status '${existingReservation.status}'. Only pending reservations can be approved.` 
+      });
+    }
+
+    // Update status to confirmed
+    const updatedReservation = await reservationService.updateReservation(id, {
+      status: 'confirmed',
+    });
+
+    // Fetch complete reservation with relations
+    const completeReservation = await reservationService.getReservationById(id, {
+      includeRelations: true,
+    });
+
+    res.json({
+      message: 'Reservation approved successfully',
+      reservation: completeReservation,
+    });
+  } catch (error) {
+    console.error('Error approving reservation:', error);
+    res.status(500).json({ error: 'Failed to approve reservation', details: error.message });
+  }
+}
+
+/**
+ * Reject a pending reservation (change status to cancelled)
+ */
+async function rejectReservation(req, res) {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    // Fetch existing reservation
+    const existingReservation = await reservationService.getReservationById(id);
+    if (!existingReservation) {
+      return res.status(404).json({ error: 'Reservation not found' });
+    }
+
+    // Check if reservation is pending
+    if (existingReservation.status !== 'pending') {
+      return res.status(400).json({ 
+        error: `Cannot reject reservation with status '${existingReservation.status}'. Only pending reservations can be rejected.` 
+      });
+    }
+
+    // Update status to cancelled
+    const updateData = {
+      status: 'cancelled',
+    };
+
+    // Add rejection reason to notes if provided
+    if (reason) {
+      const rejectionNote = `[REJECTED] ${reason}`;
+      updateData.notes = existingReservation.notes 
+        ? `${existingReservation.notes}\n${rejectionNote}`
+        : rejectionNote;
+    }
+
+    const updatedReservation = await reservationService.updateReservation(id, updateData);
+
+    // Fetch complete reservation with relations
+    const completeReservation = await reservationService.getReservationById(id, {
+      includeRelations: true,
+    });
+
+    res.json({
+      message: 'Reservation rejected successfully',
+      reservation: completeReservation,
+    });
+  } catch (error) {
+    console.error('Error rejecting reservation:', error);
+    res.status(500).json({ error: 'Failed to reject reservation', details: error.message });
+  }
+}
+
+/**
+ * Create a reservation request (with pending status)
+ * This is for authenticated users to request reservations
+ */
+async function createReservationRequest(req, res) {
+  try {
+    const { provider_id, service_id, start_time, notes } = req.body;
+    
+    // Get user_id from authenticated user
+    const user_id = req.user.id;
+
+    // Validate required fields
+    if (!provider_id || !service_id || !start_time) {
+      return res.status(400).json({
+        error: 'Missing required fields: provider_id, service_id, and start_time are required',
+      });
+    }
+
+    // Parse start time
+    const startTime = new Date(start_time);
+
+    // Validate if the date is valid
+    if (isNaN(startTime.getTime())) {
+      return res.status(400).json({
+        error: 'Invalid date format for start_time',
+      });
+    }
+
+    // Validate that reservation is not in the past
+    const now = new Date();
+    if (startTime < now) {
+      return res.status(400).json({
+        error: 'Cannot create reservations for past dates or times',
+      });
+    }
+
+    // Validate if time is on the hour or half-hour
+    if (!isValidTimeSlot(startTime)) {
+      return res.status(400).json({
+        error: 'Reservation time must be on the hour (e.g., 9:00) or half-hour (e.g., 9:30)',
+      });
+    }
+
+    // Get service details to calculate end time and price
+    const service = await serviceService.getServiceById(service_id);
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    if (!service.is_active) {
+      return res.status(400).json({ error: 'Service is not currently available' });
+    }
+
+    // Calculate end time based on service duration
+    const endTime = new Date(startTime);
+    endTime.setMinutes(endTime.getMinutes() + service.duration_minutes);
+
+    // Validate business hours
+    const businessHoursCheck = isWithinBusinessHours(startTime, endTime);
+    if (!businessHoursCheck.valid) {
+      return res.status(400).json({ error: businessHoursCheck.message });
+    }
+
+    // Check for 1-hour gap between reservations
+    const hasGap = await hasOneHourGap(provider_id, startTime, endTime);
+    if (!hasGap) {
+      return res.status(400).json({
+        error: 'There must be at least 1 hour gap between reservations for this provider',
+      });
+    }
+
+    // Create the reservation with pending status
+    const reservation = await reservationService.createReservation({
+      user_id,
+      provider_id,
+      service_id,
+      start_time: startTime,
+      end_time: endTime,
+      total_price: service.price,
+      notes,
+      status: 'pending', // Different from createReservation - this is pending
+    });
+
+    // Fetch the complete reservation with relations
+    const completeReservation = await reservationService.getReservationById(
+      reservation.reservation_id,
+      { includeRelations: true }
+    );
+
+    res.status(201).json(completeReservation);
+  } catch (error) {
+    console.error('Error creating reservation request:', error);
+    res.status(500).json({ error: 'Failed to create reservation request', details: error.message });
+  }
+}
+
 module.exports = {
   createReservation,
   getReservations,
   getReservationById,
   getUserReservations,
+  getMyReservations,
   getReservationsByDateRange,
   getPublicReservationsByDateRange,
   updateReservation,
   deleteReservation,
+  getPendingReservations,
+  getPendingReservationsCount,
+  approveReservation,
+  rejectReservation,
+  createReservationRequest,
 };
 
