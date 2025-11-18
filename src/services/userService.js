@@ -1,10 +1,15 @@
-const { User, Reservation } = require('../models');
+const { User, Reservation, Language } = require('../models');
 const encryptor = require('./encryptor');
 
 const defaultUserInclude = [
   {
     model: Reservation,
     as: 'reservations',
+  },
+  {
+    model: Language,
+    as: 'language',
+    attributes: ['language_id', 'code', 'name', 'native_name'],
   },
 ];
 
@@ -46,6 +51,16 @@ async function createUser(payload) {
   try {
     const userData = await prepareUserPayload(payload);
     const user = await User.create(userData);
+    // Reload with language relation
+    await user.reload({
+      include: [
+        {
+          model: Language,
+          as: 'language',
+          attributes: ['language_id', 'code', 'name', 'native_name'],
+        },
+      ],
+    });
     return sanitizeUser(user);
   } catch (error) {
     console.error('Error creating user', error);
@@ -93,7 +108,15 @@ async function updateUser(userId, updates) {
     const userData = await prepareUserPayload(updates);
 
     await user.update(userData);
-    await user.reload();
+    await user.reload({
+      include: [
+        {
+          model: Language,
+          as: 'language',
+          attributes: ['language_id', 'code', 'name', 'native_name'],
+        },
+      ],
+    });
     return sanitizeUser(user);
   } catch (error) {
     console.error('Error in updateUser service:', error);
@@ -132,7 +155,13 @@ async function authenticateUser(email, password) {
   try {
     const user = await User.findOne({
       where: { email },
-      include: defaultUserInclude,
+      include: [
+        {
+          model: Language,
+          as: 'language',
+          attributes: ['language_id', 'code', 'name', 'native_name'],
+        },
+      ],
     });
 
     if (!user || !user.password_hash) {

@@ -1,12 +1,19 @@
 const express = require('express');
 const userController = require('../controllers/userController');
 const reservationController = require('../controllers/reservationController');
+const languageController = require('../controllers/languageController');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
 // Route for authenticated users to update their own profile
 router.put('/profile', authenticateToken, userController.updateOwnProfile);
+
+// Route for authenticated users to update their language preference
+router.patch('/language', authenticateToken, userController.updateLanguagePreference);
+
+// Route for getting available languages (no authentication required)
+router.get('/languages', languageController.getActiveLanguages);
 
 // Route for getting public reservations by date range (for viewing availability)
 // This helps users see existing reservations and services to choose available time slots

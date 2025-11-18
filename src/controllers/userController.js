@@ -186,6 +186,51 @@ const updateOwnProfile = asyncHandler(async (req, res) => {
   }
 });
 
+const updateLanguagePreference = asyncHandler(async (req, res) => {
+  try {
+    // Ensure the user is authenticated and is a user type (not provider)
+    if (!req.user || req.user.type !== 'user') {
+      return res.status(403).json({ 
+        message: 'Access denied. User account required.' 
+      });
+    }
+
+    const { language_id } = req.body;
+
+    if (!language_id) {
+      return res.status(400).json({
+        message: 'language_id is required',
+      });
+    }
+
+    // Validate language_id is a number
+    const langId = parseInt(language_id, 10);
+    if (isNaN(langId)) {
+      return res.status(400).json({
+        message: 'language_id must be a valid number',
+      });
+    }
+
+    // Use the authenticated user's ID from the token
+    const user = await userService.updateUser(req.user.id, { language_id: langId });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.json({
+      message: 'Language preference updated successfully',
+      user,
+    });
+  } catch (error) {
+    console.error('Error in updateLanguagePreference controller:', error);
+    return res.status(500).json({
+      message: 'Failed to update language preference',
+      error: error.message,
+    });
+  }
+});
+
 module.exports = {
   createUser,
   listUsers,
@@ -193,5 +238,6 @@ module.exports = {
   updateUser,
   deleteUser,
   updateOwnProfile,
+  updateLanguagePreference,
 };
 
