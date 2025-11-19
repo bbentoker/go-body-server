@@ -9,13 +9,10 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-3000}
       DB_HOST: 13.60.63.46
-      DB_PORT: 5432
+      DB_PORT: 5432 
       DB_NAME: go-body
       DB_USER: postgres
       DB_PASSWORD: cFBJuLx6vfn4QkBRHQwgDMCSQL0RE7BS0yVYuL33OxNivuY3EG5YosynnM7WsSE7
       DB_LOGGING: ${DB_LOGGING:-false}
     ports:
       - "${PORT:-3000}:3000"
-    depends_on:
-      db:
-        condition: service_healthy
