@@ -26,7 +26,7 @@ INSERT INTO languages (language_id, code, name, native_name) VALUES
     (2, 'es', 'Spanish', 'Español'),
     (3, 'zh', 'Chinese', '中文'),
     (4, 'tr', 'Turkish', 'Türkçe'),
-    (5, 'ar', 'Arabic', 'العربية');
+    (5, 'ar', 'Arabic', 'العربية'),
     (6, 'ru', 'Russian', 'Русский'),
     (7, 'id', 'Indonesian', 'Bahasa Indonesia');
 
@@ -93,25 +93,9 @@ CREATE TABLE providers (
         ON DELETE RESTRICT
 );
 
-INSERT INTO providers (
-    first_name,
-    last_name,
-    email,
-    phone_number,
-    password_hash,
-    title,
-    bio,
-    role_id
-) VALUES (
-    'Admin',
-    'User',
-    'admin@admin.com',
-    NULL,
-    NULL,
-    'System Administrator',
-    'Seed admin provider account.',
-    1
-);
+INSERT INTO public.providers (first_name,last_name,email,phone_number,password_hash,title,bio,role_id,is_active,is_verified,created_at,language_id) VALUES
+	 ('Admin','User','admin@admin.com',NULL,'pbkdf2$sha512$310000$17e12b546c4fdede2ce024ed4d243a3d$12caeb0ba56faef153b2d60bc71e13def96ea2770145f411576603b4a617367c762d20e206e58680338fb4909da4dbf67653cb15959b179c23e9ae186c1c5bc2','System Administrator','Seed admin provider account.',1,true,false,'2025-11-12 23:46:05.851',4);
+
 
 -- 5. 'services' (Hizmetler)
 -- Sunulan hizmetler (60dk, 75dk, 90dk vb.).
