@@ -19,6 +19,10 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the Express server' });
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.use('/auth', authRoutes);
 app.use('/providers', providerRoutes);
 app.use('/users', userRoutes);

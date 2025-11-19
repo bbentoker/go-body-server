@@ -8,39 +8,14 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-3000}
-      DB_HOST: db
+      DB_HOST: 13.60.63.46
       DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-go-body}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-adminadmin}
+      DB_NAME: go-body
+      DB_USER: postgres
+      DB_PASSWORD: cFBJuLx6vfn4QkBRHQwgDMCSQL0RE7BS0yVYuL33OxNivuY3EG5YosynnM7WsSE7
       DB_LOGGING: ${DB_LOGGING:-false}
     ports:
       - "${PORT:-3000}:3000"
     depends_on:
       db:
         condition: service_healthy
-
-  db:
-    image: postgres:15-alpine
-    container_name: gobody-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${DB_NAME:-go-body}
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-adminadmin}
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-go-body}",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
