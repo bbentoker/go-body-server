@@ -10,8 +10,11 @@ const publicRoutes = require('./routes/publicRoutes');
 
 const app = express();
 
-// Enable CORS for all origins
-app.use(cors());
+// Enable CORS for specific origins
+app.use(cors({
+  origin: 'https://go-body.co',
+  credentials: true
+}));
 
 app.use(express.json());
 
