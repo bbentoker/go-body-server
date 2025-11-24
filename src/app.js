@@ -11,8 +11,18 @@ const publicRoutes = require('./routes/publicRoutes');
 const app = express();
 
 // Enable CORS for specific origins
+const isDev = process.env.NODE_ENV !== 'production';
 app.use(cors({
-  origin: 'https://go-body.co',
+  origin: isDev 
+    ? (origin, callback) => {
+        // Allow localhost and 127.0.0.1 in development (any port)
+        if (!origin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      }
+    : 'https://go-body.co',
   credentials: true
 }));
 
