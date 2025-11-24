@@ -1,4 +1,7 @@
 const authService = require('../services/authService');
+const providerService = require('../services/providerService');
+
+const ADMIN_ROLE_ID = Number.parseInt(process.env.ADMIN_ROLE_ID || '1', 10);
 
 /**
  * Middleware to verify JWT access token from Authorization header
@@ -83,12 +86,46 @@ function authenticateProvider(req, res, next) {
 /**
  * Middleware to verify admin provider authentication
  */
-function authenticateAdmin(req, res, next) {
-  authenticateProvider(req, res, () => {
-    // Additional admin-specific checks could go here
-    // For now, just check if it's a provider
+async function authenticateAdmin(req, res, next) {
+  try {
+    // First verify it's a provider
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (req.user.type !== 'provider') {
+      return res.status(403).json({ error: 'Access denied. Provider account required.' });
+    }
+
+    // Convert provider ID to number (token might have it as string)
+    const providerId = parseInt(req.user.id, 10);
+    if (isNaN(providerId)) {
+      console.error('Invalid provider ID:', req.user.id);
+      return res.status(403).json({ error: 'Invalid provider ID' });
+    }
+
+    // Fetch provider to check role_id
+    const provider = await providerService.getProviderById(providerId);
+    if (!provider) {
+      console.error('Provider not found for ID:', providerId);
+      return res.status(403).json({ error: 'Provider not found' });
+    }
+
+    // Check if provider has admin role
+    const providerRoleId = parseInt(provider.role_id, 10);
+    if (providerRoleId !== ADMIN_ROLE_ID) {
+      console.error(`Provider role_id (${providerRoleId}) does not match ADMIN_ROLE_ID (${ADMIN_ROLE_ID})`);
+      return res.status(403).json({ 
+        error: 'Access denied. Admin privileges required.',
+        details: `Expected role_id: ${ADMIN_ROLE_ID}, got: ${providerRoleId}`
+      });
+    }
+
     next();
-  });
+  } catch (error) {
+    console.error('Admin authentication error:', error);
+    return res.status(403).json({ error: 'Admin authentication failed' });
+  }
 }
 
 module.exports = {
