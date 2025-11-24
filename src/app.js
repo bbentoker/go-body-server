@@ -8,6 +8,7 @@ const serviceRoutes = require('./routes/serviceRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const blogRoutes = require('./routes/blogRoutes');
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/services', serviceRoutes);
 app.use('/reservations', reservationRoutes);
 app.use('/public', publicRoutes);
 app.use('/admin', adminRoutes);
+app.use('/blogs', blogRoutes);
 
 module.exports = app;
 

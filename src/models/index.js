@@ -8,6 +8,8 @@ const ProviderRoleModel = require('./providerRole');
 const ReservationModel = require('./reservation');
 const RefreshTokenModel = require('./refreshToken');
 const LanguageModel = require('./language');
+const BlogModel = require('./blog');
+const BlogMediaModel = require('./blogMedia');
 
 const User = UserModel(sequelize);
 const Provider = ProviderModel(sequelize);
@@ -17,6 +19,8 @@ const ProviderRole = ProviderRoleModel(sequelize);
 const Reservation = ReservationModel(sequelize);
 const RefreshToken = RefreshTokenModel(sequelize);
 const Language = LanguageModel(sequelize);
+const Blog = BlogModel(sequelize);
+const BlogMedia = BlogMediaModel(sequelize);
 
 User.hasMany(Reservation, {
   foreignKey: 'user_id',
@@ -112,6 +116,25 @@ Provider.belongsTo(Language, {
   as: 'language',
 });
 
+Provider.hasMany(Blog, {
+  foreignKey: 'provider_id',
+  as: 'blogs',
+});
+Blog.belongsTo(Provider, {
+  foreignKey: 'provider_id',
+  as: 'provider',
+});
+
+Blog.hasMany(BlogMedia, {
+  foreignKey: 'blog_id',
+  as: 'media',
+  onDelete: 'CASCADE',
+});
+BlogMedia.belongsTo(Blog, {
+  foreignKey: 'blog_id',
+  as: 'blog',
+});
+
 module.exports = {
   sequelize,
   User,
@@ -122,5 +145,7 @@ module.exports = {
   Reservation,
   RefreshToken,
   Language,
+  Blog,
+  BlogMedia,
 };
 

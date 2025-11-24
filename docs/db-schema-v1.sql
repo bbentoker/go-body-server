@@ -1,5 +1,7 @@
 -- Geliştirme ortamında betiğin tekrar tekrar çalıştırılabilmesi için
 -- mevcut tabloları (ve bağlı olanları) temizle.
+DROP TABLE IF EXISTS blog_media CASCADE;
+DROP TABLE IF EXISTS blogs CASCADE;
 DROP TABLE IF EXISTS reservations CASCADE;
 DROP TABLE IF EXISTS provider_services_relation CASCADE;
 DROP TABLE IF EXISTS refresh_tokens CASCADE;
@@ -204,6 +206,44 @@ CREATE TABLE refresh_tokens (
     )
 );
 
+
+-- 9. 'blogs' (Sağlayıcı blog yazıları)
+-- Blog içerikleri ve temel metadata
+CREATE TABLE blogs (
+    blog_id BIGSERIAL PRIMARY KEY,
+    provider_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    cover_image_url TEXT,
+    is_published BOOLEAN NOT NULL DEFAULT false,
+    published_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ,
+
+    CONSTRAINT fk_blog_provider
+        FOREIGN KEY (provider_id)
+        REFERENCES providers(provider_id)
+        ON DELETE CASCADE
+);
+
+-- 10. 'blog_media' (Blog medya dosyaları)
+-- Blog yazılarına ait görsel veya video referanslarını saklar
+CREATE TABLE blog_media (
+    media_id BIGSERIAL PRIMARY KEY,
+    blog_id BIGINT NOT NULL,
+    media_type VARCHAR(20) NOT NULL CHECK (media_type IN ('image', 'video')),
+    object_key VARCHAR(512) NOT NULL,
+    url TEXT NOT NULL,
+    alt_text VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ,
+
+    CONSTRAINT fk_blog_media_blog
+        FOREIGN KEY (blog_id)
+        REFERENCES blogs(blog_id)
+        ON DELETE CASCADE
+);
+
 ---
 --- PERFORMANS İÇİN INDEX'LER
 ---
@@ -247,3 +287,14 @@ ON users (language_id);
 -- Sağlayıcıların dil tercihlerine göre filtreleme için.
 CREATE INDEX idx_providers_language_id 
 ON providers (language_id);
+
+-- Blog yazılarını yazarına göre filtrelemek için.
+CREATE INDEX idx_blogs_provider_id
+ON blogs (provider_id);
+
+-- Blog medya kayıtlarına hızlı erişim için.
+CREATE INDEX idx_blog_media_blog_id
+ON blog_media (blog_id);
+
+CREATE INDEX idx_blog_media_type
+ON blog_media (media_type);
