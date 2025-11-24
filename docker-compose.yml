@@ -14,5 +14,9 @@ services:
       DB_USER: postgres
       DB_PASSWORD: cFBJuLx6vfn4QkBRHQwgDMCSQL0RE7BS0yVYuL33OxNivuY3EG5YosynnM7WsSE7
       DB_LOGGING: ${DB_LOGGING:-false}
+      MINIO_BUCKET_URL: https://s3.go-body.co
+      MINIO_ADMIN_USER: 3Jql56QgNEzm1HED
+      MINIO_ADMIN_PASSWORD: Zhdf44XUz7mOGg8AIG4omv6nXmHhN7Mx
+      MINIO_BUCKET_NAME: go-body
     ports:
       - "${PORT:-3000}:3000"
