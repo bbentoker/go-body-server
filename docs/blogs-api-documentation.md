@@ -10,19 +10,69 @@ Example: `GET BASE_URL/blogs`
 ---
 
 ## Table of Contents
+- [Public Blog Routes](#public-blog-routes)
+  - [List Published Blogs](#1-list-published-blogs)
 - [Blog Routes](#blog-routes)
-  - [List Blogs](#1-list-blogs)
-  - [Get Blog by ID](#2-get-blog-by-id)
-  - [Create Blog (provider only)](#3-create-blog-provider-only)
-  - [Update Blog (provider only)](#4-update-blog-provider-only)
-  - [Delete Blog (provider only)](#5-delete-blog-provider-only)
-  - [Upload Blog Media (provider only)](#6-upload-blog-media-provider-only)
+  - [List Blogs](#2-list-blogs)
+  - [Get Blog by ID](#3-get-blog-by-id)
+  - [Create Blog (provider only)](#4-create-blog-provider-only)
+  - [Update Blog (provider only)](#5-update-blog-provider-only)
+  - [Delete Blog (provider only)](#6-delete-blog-provider-only)
+  - [Upload Blog Media (provider only)](#7-upload-blog-media-provider-only)
+
+---
+
+## Public Blog Routes
+
+### 1. List Published Blogs
+
+Fetch all published blogs (public endpoint). This returns only `is_published = true` and `published_at` not null, ordered by `published_at` desc then `created_at` desc.
+
+**Endpoint:** `GET /public/blogs`
+
+**Query Params:**
+- `includeMedia` (optional: `true`|`1`): include media records.
+
+**Sample Request:**
+```
+GET /public/blogs?includeMedia=true
+```
+
+**Sample Response:**
+```json
+[
+  {
+    "blog_id": 3,
+    "provider_id": 12,
+    "title": "Fall Recovery Tips",
+    "content": "...",
+    "cover_image_url": "https://s3.go-body.co/go-body/blogs/3/images/cover.png",
+    "is_published": true,
+    "published_at": "2025-11-25T00:00:00.000Z",
+    "created_at": "2025-11-25T00:00:00.000Z",
+    "updated_at": "2025-11-25T00:00:00.000Z",
+    "provider": { "provider_id": 12, "first_name": "Ana", "last_name": "Lopez", "email": "ana@example.com", "role_id": 2, "is_active": true, "is_verified": true, "language_id": 4, "created_at": "2025-11-20T00:00:00.000Z" },
+    "media": [
+      {
+        "media_id": 9,
+        "blog_id": 3,
+        "media_type": "image",
+        "object_key": "blogs/3/images/1700890093-header.png",
+        "url": "https://s3.go-body.co/go-body/blogs/3/images/1700890093-header.png",
+        "alt_text": "Stretching",
+        "created_at": "2025-11-25T00:00:00.000Z",
+        "updated_at": "2025-11-25T00:00:00.000Z"
+      }
+    ]
+  }
+]
+```
 
 ---
 
 ## Blog Routes
 
-### 1. List Blogs
+### 2. List Blogs
 
 Fetch all blogs. Public endpoint.
 
@@ -69,7 +119,7 @@ GET /blogs?includeMedia=true&providerId=12
 
 ---
 
-### 2. Get Blog by ID
+### 3. Get Blog by ID
 
 Fetch a single blog by ID. Public endpoint.
 
@@ -89,7 +139,7 @@ GET /blogs/3?includeMedia=true
 
 ---
 
-### 3. Create Blog (provider only)
+### 4. Create Blog (provider only)
 
 Create a new blog post. Requires provider JWT (`Authorization: Bearer <token>`).
 
@@ -122,7 +172,7 @@ Create a new blog post. Requires provider JWT (`Authorization: Bearer <token>`).
 
 ---
 
-### 4. Update Blog (provider only)
+### 5. Update Blog (provider only)
 
 Update an existing blog. Only the owning provider can update.
 
@@ -150,7 +200,7 @@ Update an existing blog. Only the owning provider can update.
 
 ---
 
-### 5. Delete Blog (provider only)
+### 6. Delete Blog (provider only)
 
 Delete an existing blog. Only the owning provider can delete.
 
@@ -164,7 +214,7 @@ Delete an existing blog. Only the owning provider can delete.
 
 ---
 
-### 6. Upload Blog Media (provider only)
+### 7. Upload Blog Media (provider only)
 
 Upload an image or video and attach it to a blog. Stored in MinIO under `blogs/{blogId}/images/...` or `blogs/{blogId}/videos/...`.
 

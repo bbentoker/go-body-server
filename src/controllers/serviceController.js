@@ -111,11 +111,22 @@ const deleteService = asyncHandler(async (req, res) => {
   return res.status(204).send();
 });
 
+const listServicesWithoutPrice = asyncHandler(async (req, res) => {
+  const services = await serviceService.getServices({ includeProviders: false });
+  const sanitized = services.map((service) => {
+    const { price, ...rest } = service;
+    return rest;
+  });
+
+  return res.json(sanitized);
+});
+
 module.exports = {
   createService,
   listServices,
   getServiceById,
   updateService,
   deleteService,
+  listServicesWithoutPrice,
 };
 

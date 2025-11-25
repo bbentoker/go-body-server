@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const blogService = require('../services/blogService');
 const blogMediaService = require('../services/blogMediaService');
 const storageService = require('../services/storageService');
@@ -228,6 +229,16 @@ const uploadMedia = asyncHandler(async (req, res) => {
   return res.status(201).json(mediaRecord);
 });
 
+const listPublishedBlogs = asyncHandler(async (req, res) => {
+  const includeMedia = parseIncludeMedia(req);
+  const blogs = await blogService.getBlogs({
+    includeMedia,
+    where: { is_published: true, published_at: { [Op.ne]: null } },
+    order: [['published_at', 'DESC'], ['created_at', 'DESC']],
+  });
+  return res.json(blogs);
+});
+
 module.exports = {
   createBlog,
   listBlogs,
@@ -235,4 +246,5 @@ module.exports = {
   updateBlog,
   deleteBlog,
   uploadMedia,
+  listPublishedBlogs,
 };
