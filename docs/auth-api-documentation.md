@@ -16,10 +16,13 @@ Example: `POST BASE_URL/auth/admin/login`
 - [User Routes](#user-routes)
   - [User Registration](#3-user-registration)
   - [User Login](#4-user-login)
+- [Password Reset Routes](#password-reset-routes)
+  - [User Password Reset](#5-user-password-reset)
+  - [Provider Password Reset](#6-provider-password-reset)
 - [Token Management Routes](#token-management-routes)
-  - [Refresh Token](#5-refresh-token)
-  - [Logout](#6-logout)
-  - [Logout All Sessions](#7-logout-all-sessions)
+  - [Refresh Token](#7-refresh-token)
+  - [Logout](#8-logout)
+  - [Logout All Sessions](#9-logout-all-sessions)
 
 ---
 
@@ -304,9 +307,57 @@ Login endpoint for regular users/customers.
 
 ---
 
+## Password Reset Routes
+
+### 5. User Password Reset
+
+Directly reset a user's password by email. No token/email verification flow is included; restrict usage to trusted/admin contexts or wrap with your own verification step.
+
+**Endpoint:** `POST /auth/user/reset-password`
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "new_password": "new-strong-password"
+}
+```
+
+**Rules:**
+- `new_password` must be at least 6 characters.
+
+**Responses:**
+- `200 OK` – password reset successfully
+- `400 Bad Request` – missing fields or weak password
+- `404 Not Found` – user not found
+
+### 6. Provider Password Reset
+
+Directly reset a provider's password by email. No token/email verification flow is included; restrict usage to trusted/admin contexts or wrap with your own verification step.
+
+**Endpoint:** `POST /auth/provider/reset-password`
+
+**Request Body:**
+```json
+{
+  "email": "provider@example.com",
+  "new_password": "new-strong-password"
+}
+```
+
+**Rules:**
+- `new_password` must be at least 6 characters.
+
+**Responses:**
+- `200 OK` – password reset successfully
+- `400 Bad Request` – missing fields or weak password
+- `404 Not Found` – provider not found
+
+---
+
 ## Token Management Routes
 
-### 5. Refresh Token
+### 7. Refresh Token
 
 Generate a new access token using a valid refresh token.
 
@@ -353,7 +404,7 @@ Generate a new access token using a valid refresh token.
 
 ---
 
-### 6. Logout
+### 8. Logout
 
 Logout from a specific session by revoking a refresh token.
 
@@ -399,7 +450,7 @@ Logout from a specific session by revoking a refresh token.
 
 ---
 
-### 7. Logout All Sessions
+### 9. Logout All Sessions
 
 Logout from all active sessions for a user or provider.
 
@@ -558,6 +609,20 @@ curl -X POST http://localhost:3000/auth/user/login \
   -d '{"email":"user@example.com","password":"password123"}'
 ```
 
+**Reset User Password (direct):**
+```bash
+curl -X POST http://localhost:3000/auth/user/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","new_password":"newPass123"}'
+```
+
+**Reset Provider Password (direct):**
+```bash
+curl -X POST http://localhost:3000/auth/provider/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{"email":"provider@example.com","new_password":"newPass123"}'
+```
+
 **Refresh Token:**
 ```bash
 curl -X POST http://localhost:3000/auth/refresh \
@@ -618,6 +683,9 @@ CREATE TABLE refresh_tokens (
 ---
 
 ## Changelog
+
+### Version 1.1
+- Added direct password reset endpoints for users and providers
 
 ### Version 1.0
 - Initial authentication system

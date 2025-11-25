@@ -58,6 +58,7 @@ const createBlog = asyncHandler(async (req, res) => {
   if (providerId === null) {
     return res.status(401).json({ message: 'Invalid provider credentials' });
   }
+  const { file } = req;
 
   const { payload, missingRequired } = extractBlogPayload(
     req.body,
@@ -74,7 +75,29 @@ const createBlog = asyncHandler(async (req, res) => {
     });
   }
 
-  const blog = await blogService.createBlog(payload);
+  let blog = await blogService.createBlog(payload);
+
+  if (file) {
+    const safeName = file.originalname
+      ? file.originalname.replace(/[^\w.-]+/g, '-')
+      : `cover-${Date.now()}`;
+    const objectKey = `blogs/${blog.blog_id}/images/cover-${Date.now()}-${safeName}`;
+
+    const uploadResult = await storageService.uploadBuffer(objectKey, file.buffer, {
+      'Content-Type': file.mimetype,
+      'Content-Length': file.size,
+    });
+
+    await blogMediaService.createMedia(blog.blog_id, {
+      media_type: 'image',
+      object_key: uploadResult.objectKey,
+      url: uploadResult.url,
+      alt_text: req.body?.cover_alt_text,
+    });
+
+    blog = await blogService.updateBlog(blog.blog_id, { cover_image_url: uploadResult.url });
+  }
+
   return res.status(201).json(blog);
 });
 

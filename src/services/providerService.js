@@ -138,6 +138,29 @@ async function getProviderByEmail(email, options = {}) {
   }
 }
 
+async function resetProviderPasswordByEmail(email, newPassword) {
+  try {
+    const provider = await Provider.findOne({ where: { email } });
+    if (!provider) {
+      return null;
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      const error = new Error('Password must be at least 6 characters long');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const password_hash = await encryptor.hashPassword(newPassword);
+    await provider.update({ password_hash });
+
+    return sanitizeProvider(provider);
+  } catch (error) {
+    console.error('Error in resetProviderPasswordByEmail service:', error);
+    throw error;
+  }
+}
+
 async function authenticateProvider(email, password, roleId) {
   try {
     const provider = await Provider.findOne({
@@ -171,5 +194,6 @@ module.exports = {
   deleteProvider,
   getProviderByEmail,
   authenticateProvider,
+  resetProviderPasswordByEmail,
 };
 

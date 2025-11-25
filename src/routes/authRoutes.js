@@ -10,6 +10,8 @@ router.post('/worker/login', authController.loginWorkerProvider);
 // User registration and login routes
 router.post('/user/register', authController.registerUser);
 router.post('/user/login', authController.loginUser);
+router.post('/user/reset-password', authController.resetUserPassword);
+router.post('/provider/reset-password', authController.resetProviderPassword);
 
 // Token management routes
 router.post('/refresh', authController.refreshToken);

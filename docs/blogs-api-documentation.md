@@ -95,21 +95,25 @@ Create a new blog post. Requires provider JWT (`Authorization: Bearer <token>`).
 
 **Endpoint:** `POST /blogs`
 
-**Required Body:**
-```json
-{
-  "title": "Recovery After Injury",
-  "content": "Long form body text..."
-}
-```
+**Content-Type:** `multipart/form-data`
 
-**Optional Body Fields:**
-- `cover_image_url` (string)
+**Required Fields:**
+- `title` (string)
+- `content` (string)
+
+**Optional Fields:**
+- `cover` (file): image file for the cover; stored under `blogs/{blogId}/images/cover-...`
+- `cover_alt_text` (string): alt text for the cover image
 - `is_published` (boolean; if true and `published_at` is not supplied, it is set to now)
 - `published_at` (ISO timestamp; overrides auto publish time)
+- `cover_image_url` (string): alternate way to set cover URL directly (if you don't upload a file)
+
+**Optional Body Fields:**
+- N/A (see optional fields above)
 
 **Notes:**
 - `provider_id` is taken from the authenticated provider token; client should not send it.
+- When `cover` file is provided, it is uploaded to MinIO and saved as the blog's `cover_image_url`. A media record is also created under `blog_media` with `media_type: "image"`.
 
 **Responses:**
 - `201 Created` with created blog.
@@ -123,6 +127,8 @@ Create a new blog post. Requires provider JWT (`Authorization: Bearer <token>`).
 Update an existing blog. Only the owning provider can update.
 
 **Endpoint:** `PUT /blogs/:blogId`
+
+**Content-Type:** `application/json`
 
 **Body (any subset):**
 ```json

@@ -15,7 +15,13 @@ const upload = multer({
 router.get('/', blogController.listBlogs);
 router.get('/:blogId', blogController.getBlogById);
 
-router.post('/', authenticateToken, authenticateProvider, blogController.createBlog);
+router.post(
+  '/',
+  authenticateToken,
+  authenticateProvider,
+  upload.single('cover'),
+  blogController.createBlog
+);
 router.put('/:blogId', authenticateToken, authenticateProvider, blogController.updateBlog);
 router.delete('/:blogId', authenticateToken, authenticateProvider, blogController.deleteBlog);
 

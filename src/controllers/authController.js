@@ -198,10 +198,48 @@ const logoutAll = asyncHandler(async (req, res) => {
   if (type !== 'user' && type !== 'provider') {
     return res.status(400).json({ message: 'type must be either "user" or "provider"' });
   }
-
+  
   await authService.revokeAllUserTokens(userId, type);
   
   return res.json({ message: 'All sessions logged out successfully' });
+});
+
+const resetUserPassword = asyncHandler(async (req, res) => {
+  const { email, new_password } = req.body;
+
+  if (!email || !new_password) {
+    return res.status(400).json({ message: 'Email and new_password are required' });
+  }
+
+  if (String(new_password).length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+  }
+
+  const user = await userService.resetUserPasswordByEmail(email, new_password);
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  return res.json({ message: 'Password reset successfully' });
+});
+
+const resetProviderPassword = asyncHandler(async (req, res) => {
+  const { email, new_password } = req.body;
+
+  if (!email || !new_password) {
+    return res.status(400).json({ message: 'Email and new_password are required' });
+  }
+
+  if (String(new_password).length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+  }
+
+  const provider = await providerService.resetProviderPasswordByEmail(email, new_password);
+  if (!provider) {
+    return res.status(404).json({ message: 'Provider not found' });
+  }
+
+  return res.json({ message: 'Password reset successfully' });
 });
 
 module.exports = {
@@ -212,5 +250,7 @@ module.exports = {
   refreshToken,
   logout,
   logoutAll,
+  resetUserPassword,
+  resetProviderPassword,
 };
 

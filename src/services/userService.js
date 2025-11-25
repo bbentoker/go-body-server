@@ -180,6 +180,29 @@ async function authenticateUser(email, password) {
   }
 }
 
+async function resetUserPasswordByEmail(email, newPassword) {
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return null;
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      const error = new Error('Password must be at least 6 characters long');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const password_hash = await encryptor.hashPassword(newPassword);
+    await user.update({ password_hash });
+
+    return sanitizeUser(user);
+  } catch (error) {
+    console.error('Error in resetUserPasswordByEmail service:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   createUser,
   getUserById,
@@ -188,5 +211,6 @@ module.exports = {
   deleteUser,
   getUserByEmail,
   authenticateUser,
+  resetUserPasswordByEmail,
 };
 
