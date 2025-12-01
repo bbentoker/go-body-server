@@ -114,7 +114,8 @@ const deleteService = asyncHandler(async (req, res) => {
 const listServicesWithoutPrice = asyncHandler(async (req, res) => {
   const services = await serviceService.getServices({ includeProviders: false });
   const sanitized = services.map((service) => {
-    const { price, ...rest } = service;
+    const plain = service?.get ? service.get({ plain: true }) : service;
+    const { price, ...rest } = plain || {};
     return rest;
   });
 

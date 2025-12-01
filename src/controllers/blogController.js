@@ -231,6 +231,7 @@ const uploadMedia = asyncHandler(async (req, res) => {
 
 const listPublishedBlogs = asyncHandler(async (req, res) => {
   const includeMedia = parseIncludeMedia(req);
+  
   const blogs = await blogService.getBlogs({
     includeMedia,
     where: { is_published: true, published_at: { [Op.ne]: null } },
