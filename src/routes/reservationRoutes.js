@@ -10,7 +10,7 @@ router.get('/index', reservationController.getReservationsByDateRange);
 // Get public reservations by date range (sanitized, no sensitive data)
 router.get('/public', reservationController.getPublicReservationsByDateRange);
 
-// Get pending reservations (optionally filtered by provider_id, user_id, or service_id)
+// Get pending reservations (optionally filtered by provider_id, user_id, variant_id, or service_id)
 router.get('/pending', reservationController.getPendingReservations);
 
 // Get pending reservations count (optionally filtered by provider_id)

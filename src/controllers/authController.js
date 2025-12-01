@@ -39,7 +39,7 @@ const loginAdminProvider = asyncHandler(async (req, res) => {
     role_name: ADMIN_ROLE_NAME,
     description: 'Administrative provider role with elevated privileges',
   });
-
+  
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });

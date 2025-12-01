@@ -1,5 +1,6 @@
 const reservationService = require('../services/reservationService');
 const serviceService = require('../services/serviceService');
+const serviceVariantService = require('../services/serviceVariantService');
 const userService = require('../services/userService');
 const providerService = require('../services/providerService');
 const { Op } = require('sequelize');
@@ -119,7 +120,7 @@ function getCurrentWeekRange() {
  */
 async function getReservationsByDateRange(req, res) {
   try {
-    const { start_date, end_date, provider_id, user_id } = req.query;
+    const { start_date, end_date, provider_id, user_id, variant_id, service_id } = req.query;
     
     let startDate, endDate;
     
@@ -156,6 +157,8 @@ async function getReservationsByDateRange(req, res) {
     // Add optional filters
     if (provider_id) whereClause.provider_id = provider_id;
     if (user_id) whereClause.user_id = user_id;
+    if (variant_id) whereClause.variant_id = variant_id;
+    if (service_id) whereClause['$variant.service_id$'] = service_id;
     
     const reservations = await reservationService.getReservations({
       where: whereClause,
@@ -163,9 +166,17 @@ async function getReservationsByDateRange(req, res) {
       order: [['start_time', 'ASC']],
     });
     
-    // Fetch all services and users
-    const allServices = await serviceService.getServices({
+    // Fetch all services, variants, and users
+    const services = await serviceService.getServices({
+      includeVariants: true,
       where: { is_active: true },
+      order: [['service_id', 'ASC']],
+    });
+
+    const variants = await serviceVariantService.getVariants({
+      includeService: true,
+      where: { is_active: true },
+      order: [['service_id', 'ASC']],
     });
     
     const allUsers = await userService.getUsers();
@@ -177,7 +188,8 @@ async function getReservationsByDateRange(req, res) {
       },
       count: reservations.length,
       reservations,
-      services: allServices,
+      services,
+      variants,
       users: allUsers,
     });
   } catch (error) {
@@ -191,7 +203,7 @@ async function getReservationsByDateRange(req, res) {
  */
 async function getPublicReservationsByDateRange(req, res) {
   try {
-    const { start_date, end_date, provider_id } = req.query;
+    const { start_date, end_date, provider_id, variant_id, service_id } = req.query;
     
     let startDate, endDate;
     
@@ -228,8 +240,10 @@ async function getPublicReservationsByDateRange(req, res) {
       },
     };
     
-    // Add optional filter for provider
+    // Add optional filters
     if (provider_id) whereClause.provider_id = provider_id;
+    if (variant_id) whereClause.variant_id = variant_id;
+    if (service_id) whereClause['$variant.service_id$'] = service_id;
     
     const reservations = await reservationService.getReservations({
       where: whereClause,
@@ -244,7 +258,7 @@ async function getPublicReservationsByDateRange(req, res) {
       return {
         reservation_id: res.reservation_id,
         provider_id: res.provider_id,
-        service_id: res.service_id,
+        variant_id: res.variant_id,
         start_time: res.start_time,
         end_time: res.end_time,
         status: res.status,
@@ -254,19 +268,30 @@ async function getPublicReservationsByDateRange(req, res) {
           last_name: res.provider.last_name,
           title: res.provider.title,
         } : null,
-        service: res.service ? {
-          service_id: res.service.service_id,
-          name: res.service.name,
-          description: res.service.description,
-          duration_minutes: res.service.duration_minutes,
-          price: res.service.price,
-        } : null,
+        variant: res.variant
+          ? {
+              variant_id: res.variant.variant_id,
+              service_id: res.variant.service_id,
+              name: res.variant.name,
+              duration_minutes: res.variant.duration_minutes,
+              price: res.variant.price,
+              service: res.variant.service
+                ? {
+                    service_id: res.variant.service.service_id,
+                    name: res.variant.service.name,
+                    description: res.variant.service.description,
+                  }
+                : null,
+            }
+          : null,
       };
     });
     
-    // Fetch all active services (public info)
+    // Fetch all active services with variants (public info)
     const allServices = await serviceService.getServices({
+      includeVariants: true,
       where: { is_active: true },
+      order: [['service_id', 'ASC']],
     });
     
     // Sanitize services (remove any internal fields if needed)
@@ -276,8 +301,14 @@ async function getPublicReservationsByDateRange(req, res) {
         service_id: s.service_id,
         name: s.name,
         description: s.description,
-        duration_minutes: s.duration_minutes,
-        price: s.price,
+        is_active: s.is_active,
+        variants: (s.variants || []).map((variant) => ({
+          variant_id: variant.variant_id,
+          name: variant.name,
+          duration_minutes: variant.duration_minutes,
+          price: variant.price,
+          is_active: variant.is_active,
+        })),
       };
     });
     
@@ -321,12 +352,12 @@ async function getPublicReservationsByDateRange(req, res) {
  */
 async function createReservation(req, res) {
   try {
-    const { user_id, provider_id, service_id, start_time, notes } = req.body;
+    const { user_id, provider_id, variant_id, start_time, notes, user_package_item_id } = req.body;
 
     // Validate required fields
-    if (!user_id || !provider_id || !service_id || !start_time) {
+    if (!user_id || !provider_id || !variant_id || !start_time) {
       return res.status(400).json({
-        error: 'Missing required fields: user_id, provider_id, service_id, and start_time are required',
+        error: 'Missing required fields: user_id, provider_id, variant_id, and start_time are required',
       });
     }
 
@@ -355,19 +386,21 @@ async function createReservation(req, res) {
       });
     }
 
-    // Get service details to calculate end time and price
-    const service = await serviceService.getServiceById(service_id);
-    if (!service) {
-      return res.status(404).json({ error: 'Service not found' });
+    // Get variant details to calculate end time and validate status
+    const variant = await serviceVariantService.getVariantById(variant_id, {
+      includeService: true,
+    });
+    if (!variant) {
+      return res.status(404).json({ error: 'Service variant not found' });
     }
 
-    if (!service.is_active) {
-      return res.status(400).json({ error: 'Service is not currently available' });
+    if (!variant.is_active || (variant.service && variant.service.is_active === false)) {
+      return res.status(400).json({ error: 'Service variant is not currently available' });
     }
 
-    // Calculate end time based on service duration
+    // Calculate end time based on variant duration
     const endTime = new Date(startTime);
-    endTime.setMinutes(endTime.getMinutes() + service.duration_minutes);
+    endTime.setMinutes(endTime.getMinutes() + variant.duration_minutes);
 
     // Validate business hours
     const businessHoursCheck = isWithinBusinessHours(startTime, endTime);
@@ -387,10 +420,10 @@ async function createReservation(req, res) {
     const reservation = await reservationService.createReservation({
       user_id,
       provider_id,
-      service_id,
+      variant_id,
       start_time: startTime,
       end_time: endTime,
-      total_price: service.price,
+      user_package_item_id: user_package_item_id || null,
       notes,
       status: 'confirmed',
     });
@@ -413,12 +446,13 @@ async function createReservation(req, res) {
  */
 async function getReservations(req, res) {
   try {
-    const { user_id, provider_id, service_id, status, limit, offset } = req.query;
+    const { user_id, provider_id, variant_id, service_id, status, limit, offset } = req.query;
 
     const whereClause = {};
     if (user_id) whereClause.user_id = user_id;
     if (provider_id) whereClause.provider_id = provider_id;
-    if (service_id) whereClause.service_id = service_id;
+    if (variant_id) whereClause.variant_id = variant_id;
+    if (service_id) whereClause['$variant.service_id$'] = service_id;
     if (status) whereClause.status = status;
 
     const reservations = await reservationService.getReservations({
@@ -442,7 +476,7 @@ async function getReservations(req, res) {
 async function getUserReservations(req, res) {
   try {
     const { userId } = req.params;
-    const { provider_id, service_id, status, limit, offset } = req.query;
+    const { provider_id, variant_id, service_id, status, limit, offset } = req.query;
 
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
@@ -451,7 +485,8 @@ async function getUserReservations(req, res) {
     // Build where clause with user_id and optional filters
     const whereClause = { user_id: userId };
     if (provider_id) whereClause.provider_id = provider_id;
-    if (service_id) whereClause.service_id = service_id;
+    if (variant_id) whereClause.variant_id = variant_id;
+    if (service_id) whereClause['$variant.service_id$'] = service_id;
     if (status) whereClause.status = status;
 
     const reservations = await reservationService.getReservations({
@@ -476,12 +511,13 @@ async function getMyReservations(req, res) {
   try {
     // Get user_id from authenticated user
     const userId = req.user.id;
-    const { provider_id, service_id, status, limit, offset } = req.query;
+    const { provider_id, variant_id, service_id, status, limit, offset } = req.query;
 
     // Build where clause with user_id and optional filters
     const whereClause = { user_id: userId };
     if (provider_id) whereClause.provider_id = provider_id;
-    if (service_id) whereClause.service_id = service_id;
+    if (variant_id) whereClause.variant_id = variant_id;
+    if (service_id) whereClause['$variant.service_id$'] = service_id;
     if (status) whereClause.status = status;
 
     const reservations = await reservationService.getReservations({
@@ -533,7 +569,9 @@ async function updateReservation(req, res) {
     const updates = req.body;
 
     // Fetch existing reservation
-    const existingReservation = await reservationService.getReservationById(id);
+    const existingReservation = await reservationService.getReservationById(id, {
+      includeRelations: true,
+    });
     if (!existingReservation) {
       return res.status(404).json({ error: 'Reservation not found' });
     }
@@ -564,16 +602,22 @@ async function updateReservation(req, res) {
         });
       }
 
-      // If service_id is being updated too, fetch new service, otherwise use existing
-      const serviceId = updates.service_id || existingReservation.service_id;
-      const service = await serviceService.getServiceById(serviceId);
-      if (!service) {
-        return res.status(404).json({ error: 'Service not found' });
+      // If variant_id is being updated too, fetch new variant, otherwise use existing
+      const variantId = updates.variant_id || existingReservation.variant_id;
+      const variant = await serviceVariantService.getVariantById(variantId, {
+        includeService: true,
+      });
+      if (!variant) {
+        return res.status(404).json({ error: 'Service variant not found' });
+      }
+
+      if (!variant.is_active || (variant.service && variant.service.is_active === false)) {
+        return res.status(400).json({ error: 'Service variant is not currently available' });
       }
 
       // Calculate new end time
       const newEndTime = new Date(newStartTime);
-      newEndTime.setMinutes(newEndTime.getMinutes() + service.duration_minutes);
+      newEndTime.setMinutes(newEndTime.getMinutes() + variant.duration_minutes);
 
       // Validate business hours
       const businessHoursCheck = isWithinBusinessHours(newStartTime, newEndTime);
@@ -590,21 +634,26 @@ async function updateReservation(req, res) {
         });
       }
 
-      // Update end_time and total_price based on new calculations
+      // Update end_time based on new calculations
       updates.end_time = newEndTime;
-      updates.total_price = service.price;
     }
 
-    // If only service_id is updated (without start_time)
-    if (updates.service_id && !updates.start_time) {
-      const service = await serviceService.getServiceById(updates.service_id);
-      if (!service) {
-        return res.status(404).json({ error: 'Service not found' });
+    // If only variant_id is updated (without start_time)
+    if (updates.variant_id && !updates.start_time) {
+      const variant = await serviceVariantService.getVariantById(updates.variant_id, {
+        includeService: true,
+      });
+      if (!variant) {
+        return res.status(404).json({ error: 'Service variant not found' });
+      }
+
+      if (!variant.is_active || (variant.service && variant.service.is_active === false)) {
+        return res.status(400).json({ error: 'Service variant is not currently available' });
       }
 
       // Recalculate end_time based on existing start_time
       const newEndTime = new Date(existingReservation.start_time);
-      newEndTime.setMinutes(newEndTime.getMinutes() + service.duration_minutes);
+      newEndTime.setMinutes(newEndTime.getMinutes() + variant.duration_minutes);
 
       // Validate business hours
       const businessHoursCheck = isWithinBusinessHours(
@@ -616,7 +665,6 @@ async function updateReservation(req, res) {
       }
 
       updates.end_time = newEndTime;
-      updates.total_price = service.price;
     }
 
     const updatedReservation = await reservationService.updateReservation(id, updates);
@@ -655,11 +703,11 @@ async function deleteReservation(req, res) {
 
 /**
  * Get pending reservations
- * Optionally filter by provider_id, user_id, or service_id
+ * Optionally filter by provider_id, user_id, variant_id, or service_id
  */
 async function getPendingReservations(req, res) {
   try {
-    const { provider_id, user_id, service_id, limit, offset } = req.query;
+    const { provider_id, user_id, variant_id, service_id, limit, offset } = req.query;
     
     // Build where clause for pending reservations
     const whereClause = {
@@ -669,7 +717,8 @@ async function getPendingReservations(req, res) {
     // Add optional filters
     if (provider_id) whereClause.provider_id = provider_id;
     if (user_id) whereClause.user_id = user_id;
-    if (service_id) whereClause.service_id = service_id;
+    if (variant_id) whereClause.variant_id = variant_id;
+    if (service_id) whereClause['$variant.service_id$'] = service_id;
     
     // Get pending reservations
     const pendingReservations = await reservationService.getReservations({
@@ -696,7 +745,7 @@ async function getPendingReservations(req, res) {
  */
 async function getPendingReservationsCount(req, res) {
   try {
-    const { provider_id } = req.query;
+    const { provider_id, variant_id, service_id } = req.query;
     
     // Build where clause for pending reservations
     const whereClause = {
@@ -706,6 +755,12 @@ async function getPendingReservationsCount(req, res) {
     // Add provider filter if specified
     if (provider_id) {
       whereClause.provider_id = provider_id;
+    }
+    if (variant_id) {
+      whereClause.variant_id = variant_id;
+    }
+    if (service_id) {
+      whereClause['$variant.service_id$'] = service_id;
     }
     
     // Get all pending reservations
@@ -852,15 +907,15 @@ async function rejectReservation(req, res) {
  */
 async function createReservationRequest(req, res) {
   try {
-    const { provider_id, service_id, start_time, notes } = req.body;
+    const { provider_id, variant_id, start_time, notes, user_package_item_id } = req.body;
     
     // Get user_id from authenticated user
     const user_id = req.user.id;
 
     // Validate required fields
-    if (!provider_id || !service_id || !start_time) {
+    if (!provider_id || !variant_id || !start_time) {
       return res.status(400).json({
-        error: 'Missing required fields: provider_id, service_id, and start_time are required',
+        error: 'Missing required fields: provider_id, variant_id, and start_time are required',
       });
     }
 
@@ -889,19 +944,21 @@ async function createReservationRequest(req, res) {
       });
     }
 
-    // Get service details to calculate end time and price
-    const service = await serviceService.getServiceById(service_id);
-    if (!service) {
-      return res.status(404).json({ error: 'Service not found' });
+    // Get variant details to calculate end time and validate status
+    const variant = await serviceVariantService.getVariantById(variant_id, {
+      includeService: true,
+    });
+    if (!variant) {
+      return res.status(404).json({ error: 'Service variant not found' });
     }
 
-    if (!service.is_active) {
-      return res.status(400).json({ error: 'Service is not currently available' });
+    if (!variant.is_active || (variant.service && variant.service.is_active === false)) {
+      return res.status(400).json({ error: 'Service variant is not currently available' });
     }
 
-    // Calculate end time based on service duration
+    // Calculate end time based on variant duration
     const endTime = new Date(startTime);
-    endTime.setMinutes(endTime.getMinutes() + service.duration_minutes);
+    endTime.setMinutes(endTime.getMinutes() + variant.duration_minutes);
 
     // Validate business hours
     const businessHoursCheck = isWithinBusinessHours(startTime, endTime);
@@ -921,10 +978,10 @@ async function createReservationRequest(req, res) {
     const reservation = await reservationService.createReservation({
       user_id,
       provider_id,
-      service_id,
+      variant_id,
       start_time: startTime,
       end_time: endTime,
-      total_price: service.price,
+      user_package_item_id: user_package_item_id || null,
       notes,
       status: 'pending', // Different from createReservation - this is pending
     });

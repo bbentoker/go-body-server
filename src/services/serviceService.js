@@ -1,12 +1,29 @@
-const { Service, Provider } = require('../models');
+const { Service, ServiceVariant, Provider } = require('../models');
 
-const defaultServiceInclude = [
-  {
-    model: Provider,
-    as: 'providers',
-    through: { attributes: [] },
-  },
-];
+const providerInclude = {
+  model: Provider,
+  as: 'providers',
+  through: { attributes: [] },
+};
+
+const variantInclude = {
+  model: ServiceVariant,
+  as: 'variants',
+};
+
+function buildInclude(options = {}) {
+  const include = [];
+
+  if (options.includeProviders) {
+    include.push(providerInclude);
+  }
+
+  if (options.includeVariants) {
+    include.push(variantInclude);
+  }
+
+  return include.length > 0 ? include : undefined;
+}
 
 async function createService(payload) {
   return Service.create(payload);
@@ -14,13 +31,13 @@ async function createService(payload) {
 
 async function getServiceById(serviceId, options = {}) {
   return Service.findByPk(serviceId, {
-    include: options.includeProviders ? defaultServiceInclude : undefined,
+    include: buildInclude(options),
   });
 }
 
 async function getServices(options = {}) {
   return Service.findAll({
-    include: options.includeProviders ? defaultServiceInclude : undefined,
+    include: buildInclude(options),
     where: options.where,
     limit: options.limit,
     offset: options.offset,

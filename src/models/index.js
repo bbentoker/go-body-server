@@ -3,6 +3,7 @@ const sequelize = require('../config/database');
 const UserModel = require('./user');
 const ProviderModel = require('./provider');
 const ServiceModel = require('./service');
+const ServiceVariantModel = require('./serviceVariant');
 const ProviderServiceRelationModel = require('./providerServiceRelation');
 const ProviderRoleModel = require('./providerRole');
 const ReservationModel = require('./reservation');
@@ -10,10 +11,13 @@ const RefreshTokenModel = require('./refreshToken');
 const LanguageModel = require('./language');
 const BlogModel = require('./blog');
 const BlogMediaModel = require('./blogMedia');
+const PackageModel = require('./package');
+const PackageItemModel = require('./packageItem');
 
 const User = UserModel(sequelize);
 const Provider = ProviderModel(sequelize);
 const Service = ServiceModel(sequelize);
+const ServiceVariant = ServiceVariantModel(sequelize);
 const ProviderServiceRelation = ProviderServiceRelationModel(sequelize);
 const ProviderRole = ProviderRoleModel(sequelize);
 const Reservation = ReservationModel(sequelize);
@@ -21,6 +25,8 @@ const RefreshToken = RefreshTokenModel(sequelize);
 const Language = LanguageModel(sequelize);
 const Blog = BlogModel(sequelize);
 const BlogMedia = BlogMediaModel(sequelize);
+const Package = PackageModel(sequelize);
+const PackageItem = PackageItemModel(sequelize);
 
 User.hasMany(Reservation, {
   foreignKey: 'user_id',
@@ -40,13 +46,23 @@ Reservation.belongsTo(Provider, {
   as: 'provider',
 });
 
-Service.hasMany(Reservation, {
+Service.hasMany(ServiceVariant, {
   foreignKey: 'service_id',
-  as: 'reservations',
+  as: 'variants',
+  onDelete: 'CASCADE',
 });
-Reservation.belongsTo(Service, {
+ServiceVariant.belongsTo(Service, {
   foreignKey: 'service_id',
   as: 'service',
+});
+
+ServiceVariant.hasMany(Reservation, {
+  foreignKey: 'variant_id',
+  as: 'reservations',
+});
+Reservation.belongsTo(ServiceVariant, {
+  foreignKey: 'variant_id',
+  as: 'variant',
 });
 
 Provider.belongsToMany(Service, {
@@ -135,11 +151,31 @@ BlogMedia.belongsTo(Blog, {
   as: 'blog',
 });
 
+Package.hasMany(PackageItem, {
+  foreignKey: 'package_id',
+  as: 'items',
+  onDelete: 'CASCADE',
+});
+PackageItem.belongsTo(Package, {
+  foreignKey: 'package_id',
+  as: 'package',
+});
+
+ServiceVariant.hasMany(PackageItem, {
+  foreignKey: 'variant_id',
+  as: 'packageItems',
+});
+PackageItem.belongsTo(ServiceVariant, {
+  foreignKey: 'variant_id',
+  as: 'variant',
+});
+
 module.exports = {
   sequelize,
   User,
   Provider,
   Service,
+  ServiceVariant,
   ProviderRole,
   ProviderServiceRelation,
   Reservation,
@@ -147,5 +183,7 @@ module.exports = {
   Language,
   Blog,
   BlogMedia,
+  Package,
+  PackageItem,
 };
 

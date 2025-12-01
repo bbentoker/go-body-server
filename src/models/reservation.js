@@ -25,11 +25,19 @@ module.exports = (sequelize) => {
           key: 'provider_id',
         },
       },
-      service_id: {
+      variant_id: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        references: {
+          model: 'service_variants',
+          key: 'variant_id',
+        },
+      },
+      user_package_item_id: {
         type: DataTypes.BIGINT,
         references: {
-          model: 'services',
-          key: 'service_id',
+          model: 'user_package_items',
+          key: 'ledger_id',
         },
       },
       start_time: {
@@ -46,13 +54,6 @@ module.exports = (sequelize) => {
         defaultValue: 'pending',
         validate: {
           isIn: [RESERVATION_STATUSES],
-        },
-      },
-      total_price: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-        validate: {
-          min: 0,
         },
       },
       notes: {

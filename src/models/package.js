@@ -1,10 +1,10 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  const Service = sequelize.define(
-    'Service',
+  const Package = sequelize.define(
+    'Package',
     {
-      service_id: {
+      package_id: {
         type: DataTypes.BIGINT,
         primaryKey: true,
         autoIncrement: true,
@@ -16,13 +16,25 @@ module.exports = (sequelize) => {
       description: {
         type: DataTypes.TEXT,
       },
+      total_duration: {
+        type: DataTypes.INTEGER,
+        validate: {
+          min: 0,
+        },
+      },
+      price: {
+        type: DataTypes.DECIMAL(10, 2),
+        validate: {
+          min: 0,
+        },
+      },
+      notes: {
+        type: DataTypes.TEXT,
+      },
       is_active: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
-      },
-      notes: {
-        type: DataTypes.TEXT,
       },
       created_at: {
         type: DataTypes.DATE,
@@ -34,13 +46,12 @@ module.exports = (sequelize) => {
       },
     },
     {
-      tableName: 'services',
+      tableName: 'packages',
       timestamps: true,
       createdAt: 'created_at',
       updatedAt: 'updated_at',
     }
   );
 
-  return Service;
+  return Package;
 };
-

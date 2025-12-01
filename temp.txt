@@ -1,12 +1,17 @@
-Now add these routes for providers
+read the db schema v2 and and the LogicDocumentation-Services,PackagesReservations.md
 
-add admin 
-add worker 
+Frontend needs the following routes for admins 
 
-login admin 
+get services  , this will use service controller to get the services 
 
-login worker 
+add services , use service controller 
+add service variant , use service controller 
+also other cruds too in the same way   
 
-and also crud for for all
+add packages , could have multiple uses of same service or may have multiple different service ,create a new controller for this named packge contoller 
 
-but before doing this create a new service named encryptor and make sure to do the encryption and decryption with the methods in this service all the time 
+
+try to add the routes to the admin routes but the controllers and services must be defined in the right name for each model and can be used in differnet places 
+to make sure data integrity when operating
+
+and generate detailed docs showing the payloads too 
