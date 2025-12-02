@@ -51,37 +51,39 @@ Variants carry the duration and price for a service (e.g., "60 min / $90").
 - **Delete variant** `DELETE /admin/service-variants/:variantId`
 
 ## Packages (Templates)
-Packages bundle one or more variants with quantities.
+Packages bundle one or more services with quantities.
 
 - **Create package** `POST /admin/packages`
   - Required: `name`, `items` (array)
-  - `items`: array of `{ "variant_id": number, "quantity": positive integer }`
-    - Duplicate variant IDs are merged; quantities are summed.
-  - Optional: `description`, `notes`, `price` (overall package price), `is_active`, `total_duration` (defaults to sum of item durations).
+  - `items`: array of `{ "service_id": number, "quantity": positive integer }`
+    - Duplicate service IDs are merged; quantities are summed.
+  - Optional: `description`, `notes`, `price` (overall package price), `price_visible` (boolean, default `false`), `is_active`, `total_duration`.
   - Example:
     ```json
     {
-      "name": "5x Deep Tissue 60m",
-      "description": "Pack of five 60-minute sessions",
+      "name": "5x Massage Sessions",
+      "description": "Pack of five massages",
       "price": 430,
+      "price_visible": true,
       "items": [
-        { "variant_id": 12, "quantity": 5 }
+        { "service_id": 3, "quantity": 5 }
       ]
     }
     ```
 - **List packages** `GET /admin/packages`
   - Query: `includeItems` (`true|false`, default true)
-  - Items include variant + parent service details.
+  - Items include service details.
 - **Get package** `GET /admin/packages/:packageId`
   - Query: `includeItems` (`true|false`, default true)
 - **Update package** `PUT /admin/packages/:packageId`
-  - Body: any of `name`, `description`, `notes`, `price`, `is_active`, `total_duration`.
-  - To change contents, pass `items` (same shape as create). When provided, items are fully replaced and `total_duration` is recomputed unless explicitly set.
+  - Body: any of `name`, `description`, `notes`, `price`, `price_visible`, `is_active`, `total_duration`.
+  - To change contents, pass `items` (same shape as create). When provided, items are fully replaced; `total_duration` is only changed when you send it explicitly.
 - **Delete package** `DELETE /admin/packages/:packageId`
 
 ## Validation & Integrity Notes
-- Variant IDs in package items must exist; the API fails with the missing IDs listed.
+- Service IDs in package items must exist; the API fails with the missing IDs listed.
 - Package item quantities must be positive integers; invalid payloads return 400.
+- `price_visible` defaults to `false`; set to `true` to surface package pricing to clients/UX that respects it.
 - Services/variants include `is_active` to control availability; variant endpoints enforce parent existence.
 - Package creation/update runs in a transaction so definitions and items stay in sync.
 

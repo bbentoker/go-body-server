@@ -125,6 +125,7 @@ CREATE TABLE packages (
     description TEXT,
     total_duration INTEGER , -- Display purpose or sum of variants
     price DECIMAL(10, 2) CHECK (price >= 0),
+    price_visible BOOLEAN NOT NULL DEFAULT false,
     notes TEXT,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -132,11 +133,16 @@ CREATE TABLE packages (
 );
 
 -- The Recipe (e.g., "Contains 5 of Variant A")
+
 CREATE TABLE package_items (
     item_id SERIAL PRIMARY KEY,
     package_id INTEGER NOT NULL REFERENCES packages(package_id) ON DELETE CASCADE,
-    variant_id INTEGER NOT NULL REFERENCES service_variants(variant_id),
+    
+    -- Points to the generic Service (e.g., "Massage")
+    service_id INTEGER NOT NULL REFERENCES services(service_id) ON DELETE CASCADE,
+    
     quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE
 );

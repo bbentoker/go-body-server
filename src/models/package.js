@@ -28,6 +28,11 @@ module.exports = (sequelize) => {
           min: 0,
         },
       },
+      price_visible: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       notes: {
         type: DataTypes.TEXT,
       },

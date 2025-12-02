@@ -18,13 +18,14 @@ module.exports = (sequelize) => {
         },
         onDelete: 'CASCADE',
       },
-      variant_id: {
+      service_id: {
         type: DataTypes.BIGINT,
         allowNull: false,
         references: {
-          model: 'service_variants',
-          key: 'variant_id',
+          model: 'services',
+          key: 'service_id',
         },
+        onDelete: 'CASCADE',
       },
       quantity: {
         type: DataTypes.INTEGER,

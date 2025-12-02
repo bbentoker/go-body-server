@@ -13,7 +13,8 @@ function parseBooleanFlag(value) {
 function isClientError(error) {
   return Boolean(
     error?.message &&
-      (error.message.toLowerCase().includes('variant') ||
+      (error.message.toLowerCase().includes('service') ||
+        error.message.toLowerCase().includes('variant') ||
         error.message.toLowerCase().includes('item') ||
         error.message.toLowerCase().includes('required'))
   );
@@ -65,7 +66,7 @@ const getPackageById = asyncHandler(async (req, res) => {
 });
 
 const updatePackage = asyncHandler(async (req, res) => {
-  const hasUpdatableField = ['name', 'description', 'price', 'notes', 'is_active', 'items', 'total_duration'].some(
+  const hasUpdatableField = ['name', 'description', 'price', 'price_visible', 'notes', 'is_active', 'items', 'total_duration'].some(
     (field) => Object.prototype.hasOwnProperty.call(req.body, field)
   );
 

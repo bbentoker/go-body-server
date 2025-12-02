@@ -141,13 +141,14 @@ PackageItem.belongsTo(Package, {
   as: 'package',
 });
 
-ServiceVariant.hasMany(PackageItem, {
-  foreignKey: 'variant_id',
+Service.hasMany(PackageItem, {
+  foreignKey: 'service_id',
   as: 'packageItems',
+  onDelete: 'CASCADE',
 });
-PackageItem.belongsTo(ServiceVariant, {
-  foreignKey: 'variant_id',
-  as: 'variant',
+PackageItem.belongsTo(Service, {
+  foreignKey: 'service_id',
+  as: 'service',
 });
 
 module.exports = {

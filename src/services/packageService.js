@@ -1,20 +1,14 @@
-const { Package, PackageItem, ServiceVariant, Service, sequelize } = require('../models');
+const { Package, PackageItem, Service, sequelize } = require('../models');
 
-const variantInclude = {
-  model: ServiceVariant,
-  as: 'variant',
-  include: [
-    {
-      model: Service,
-      as: 'service',
-    },
-  ],
+const serviceInclude = {
+  model: Service,
+  as: 'service',
 };
 
 const packageItemInclude = {
   model: PackageItem,
   as: 'items',
-  include: [variantInclude],
+  include: [serviceInclude],
 };
 
 function buildInclude(options = {}) {
@@ -35,50 +29,42 @@ function normalizeItems(items = []) {
   const aggregated = new Map();
 
   items.forEach((item, index) => {
-    const variantId = Number(item.variant_id);
+    const serviceId = Number(item.service_id);
     const quantity = Number(item.quantity ?? 1);
 
-    if (!variantId || Number.isNaN(variantId)) {
-      throw new Error(`items[${index}].variant_id must be a valid number`);
+    if (!serviceId || Number.isNaN(serviceId)) {
+      throw new Error(`items[${index}].service_id must be a valid number`);
     }
 
     if (!Number.isInteger(quantity) || quantity <= 0) {
       throw new Error(`items[${index}].quantity must be a positive integer`);
     }
 
-    aggregated.set(variantId, (aggregated.get(variantId) || 0) + quantity);
+    aggregated.set(serviceId, (aggregated.get(serviceId) || 0) + quantity);
   });
 
-  return Array.from(aggregated.entries()).map(([variant_id, quantity]) => ({
-    variant_id,
+  return Array.from(aggregated.entries()).map(([service_id, quantity]) => ({
+    service_id,
     quantity,
   }));
 }
 
-async function assertVariantsExist(variantIds, transaction) {
-  const variants = await ServiceVariant.findAll({
-    where: { variant_id: variantIds },
+async function assertServicesExist(serviceIds, transaction) {
+  const services = await Service.findAll({
+    where: { service_id: serviceIds },
     transaction,
   });
 
-  if (variants.length !== variantIds.length) {
-    const foundIds = variants.map((v) => Number(v.variant_id));
-    const missing = variantIds.filter((id) => !foundIds.includes(Number(id)));
-    throw new Error(`Invalid variant_id(s): ${missing.join(', ')}`);
+  if (services.length !== serviceIds.length) {
+    const foundIds = services.map((s) => Number(s.service_id));
+    const missing = serviceIds.filter((id) => !foundIds.includes(Number(id)));
+    throw new Error(`Invalid service_id(s): ${missing.join(', ')}`);
   }
 
-  return variants.reduce((acc, variant) => {
-    acc[variant.variant_id] = variant;
+  return services.reduce((acc, service) => {
+    acc[service.service_id] = service;
     return acc;
   }, {});
-}
-
-async function calculateTotalDuration(items, variantMap) {
-  return items.reduce(
-    (sum, item) =>
-      sum + item.quantity * Number(variantMap[item.variant_id].duration_minutes || 0),
-    0
-  );
 }
 
 async function createPackage(payload) {
@@ -88,18 +74,19 @@ async function createPackage(payload) {
   }
 
   return sequelize.transaction(async (transaction) => {
-    const variantIds = normalizedItems.map((item) => item.variant_id);
-    const variantMap = await assertVariantsExist(variantIds, transaction);
-    const totalDuration = await calculateTotalDuration(normalizedItems, variantMap);
+    const serviceIds = normalizedItems.map((item) => item.service_id);
+    await assertServicesExist(serviceIds, transaction);
 
     const pkg = await Package.create(
       {
         name: payload.name,
         description: payload.description,
         price: payload.price,
+        price_visible:
+          typeof payload.price_visible === 'boolean' ? payload.price_visible : false,
         notes: payload.notes,
         is_active: payload.is_active !== undefined ? payload.is_active : true,
-        total_duration: payload.total_duration ?? totalDuration,
+        total_duration: payload.total_duration ?? null,
       },
       { transaction }
     );
@@ -107,7 +94,7 @@ async function createPackage(payload) {
     await PackageItem.bulkCreate(
       normalizedItems.map((item) => ({
         package_id: pkg.package_id,
-        variant_id: item.variant_id,
+        service_id: item.service_id,
         quantity: item.quantity,
       })),
       { transaction }
@@ -145,14 +132,18 @@ async function updatePackage(packageId, payload) {
       name: payload.name ?? pkg.name,
       description: payload.description ?? pkg.description,
       price: payload.price ?? pkg.price,
+      price_visible:
+        typeof payload.price_visible === 'boolean'
+          ? payload.price_visible
+          : pkg.price_visible,
       notes: payload.notes ?? pkg.notes,
       is_active:
         typeof payload.is_active === 'boolean' ? payload.is_active : pkg.is_active,
     };
 
     let normalizedItems;
-    let variantMap;
-    let totalDuration = payload.total_duration ?? pkg.total_duration;
+    let totalDuration =
+      payload.total_duration !== undefined ? payload.total_duration : pkg.total_duration;
 
     if (payload.items) {
       normalizedItems = normalizeItems(payload.items);
@@ -160,10 +151,11 @@ async function updatePackage(packageId, payload) {
         throw new Error('At least one package item is required');
       }
 
-      const variantIds = normalizedItems.map((item) => item.variant_id);
-      variantMap = await assertVariantsExist(variantIds, transaction);
-      totalDuration = await calculateTotalDuration(normalizedItems, variantMap);
+      const serviceIds = normalizedItems.map((item) => item.service_id);
+      await assertServicesExist(serviceIds, transaction);
       updateData.total_duration = totalDuration;
+    } else if (payload.total_duration !== undefined) {
+      updateData.total_duration = payload.total_duration;
     }
 
     await pkg.update(updateData, { transaction });
@@ -177,7 +169,7 @@ async function updatePackage(packageId, payload) {
       await PackageItem.bulkCreate(
         normalizedItems.map((item) => ({
           package_id: packageId,
-          variant_id: item.variant_id,
+          service_id: item.service_id,
           quantity: item.quantity,
         })),
         { transaction }
