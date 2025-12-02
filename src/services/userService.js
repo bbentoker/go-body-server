@@ -162,13 +162,11 @@ async function authenticateUser(email, password, options = {}) {
       },
       include: [languageInclude, roleInclude],
     });
-    console.log('user', user.get({ plain: true }));
     if (!user || !user.password_hash) {
       return null;
     }
 
     const isValid = await encryptor.verifyPassword(password, user.password_hash);
-    console.log('isValid', isValid);
     if (!isValid) {
       return null;
     }
