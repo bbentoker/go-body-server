@@ -1,5 +1,7 @@
 const userService = require('../services/userService');
 
+const CUSTOMER_ROLE_ID = Number.parseInt(process.env.CUSTOMER_ROLE_ID || '3', 10);
+
 function asyncHandler(handler) {
   return (req, res, next) => {
     Promise.resolve(handler(req, res, next)).catch(next);
@@ -17,6 +19,7 @@ function extractUserPayload(body, overrides = {}, options = {}) {
     'email',
     'phone_number',
     'password',
+    'role_id',
   ];
 
   const {
@@ -62,7 +65,10 @@ const createUser = asyncHandler(async (req, res) => {
       });
     }
 
-    const user = await userService.createUser(payload);
+    const user = await userService.createUser({
+      role_id: payload.role_id || CUSTOMER_ROLE_ID,
+      ...payload,
+    });
     return res.status(201).json(user);
   } catch (error) {
     console.error('Error in createUser controller:', error);
@@ -154,8 +160,8 @@ const deleteUser = asyncHandler(async (req, res) => {
 
 const updateOwnProfile = asyncHandler(async (req, res) => {
   try {
-    // Ensure the user is authenticated and is a user type (not provider)
-    if (!req.user || req.user.type !== 'user') {
+    // Ensure the user is authenticated and is not a provider/staff account
+    if (!req.user || req.user.isProvider) {
       return res.status(403).json({ 
         message: 'Access denied. User account required.' 
       });
@@ -188,8 +194,8 @@ const updateOwnProfile = asyncHandler(async (req, res) => {
 
 const updateLanguagePreference = asyncHandler(async (req, res) => {
   try {
-    // Ensure the user is authenticated and is a user type (not provider)
-    if (!req.user || req.user.type !== 'user') {
+    // Ensure the user is authenticated and is not a provider/staff account
+    if (!req.user || req.user.isProvider) {
       return res.status(403).json({ 
         message: 'Access denied. User account required.' 
       });

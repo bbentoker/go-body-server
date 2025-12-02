@@ -1,5 +1,13 @@
-const { Provider, Service, Reservation, ProviderRole } = require('../models');
+const { User, Service, Reservation, Role } = require('../models');
 const encryptor = require('./encryptor');
+
+const providerRoleAttributes = ['role_id', 'role_key', 'role_name', 'is_provider'];
+
+const baseRoleInclude = {
+  model: Role,
+  as: 'role',
+  attributes: providerRoleAttributes,
+};
 
 const defaultProviderInclude = [
   {
@@ -9,13 +17,14 @@ const defaultProviderInclude = [
   },
   {
     model: Reservation,
-    as: 'reservations',
+    as: 'provider_reservations',
   },
-  {
-    model: ProviderRole,
-    as: 'role',
-  },
+  baseRoleInclude,
 ];
+
+function isProviderAccount(instance) {
+  return Boolean(instance?.role?.is_provider);
+}
 
 function sanitizeProvider(providerInstance) {
   if (!providerInstance) {
@@ -28,6 +37,15 @@ function sanitizeProvider(providerInstance) {
 
   if (provider.password_hash) {
     delete provider.password_hash;
+  }
+
+  if (provider.user_id && !provider.provider_id) {
+    provider.provider_id = provider.user_id;
+  }
+
+  if (provider.provider_reservations && !provider.reservations) {
+    provider.reservations = provider.provider_reservations;
+    delete provider.provider_reservations;
   }
 
   return provider;
@@ -54,7 +72,7 @@ async function prepareProviderPayload(payload) {
 async function createProvider(payload) {
   try{
     const providerData = await prepareProviderPayload(payload);
-    const provider = await Provider.create(providerData);
+    const provider = await User.create(providerData);
     return sanitizeProvider(provider);
   }
   catch(error){
@@ -65,11 +83,13 @@ async function createProvider(payload) {
 
 async function getProviderById(providerId, options = {}) {
   try {
-    const provider = await Provider.findByPk(providerId, {
-      include: options.includeRelations ? defaultProviderInclude : undefined,
+    const include = options.includeRelations ? defaultProviderInclude : [baseRoleInclude];
+    const provider = await User.findOne({
+      where: { user_id: providerId },
+      include,
     });
 
-    return sanitizeProvider(provider);
+    return isProviderAccount(provider) ? sanitizeProvider(provider) : null;
   } catch (error) {
     console.error('Error in getProviderById service:', error);
     throw error;
@@ -78,15 +98,16 @@ async function getProviderById(providerId, options = {}) {
 
 async function getProviders(options = {}) {
   try {
-    const providers = await Provider.findAll({
-      include: options.includeRelations ? defaultProviderInclude : undefined,
+    const include = options.includeRelations ? defaultProviderInclude : [baseRoleInclude];
+    const providers = await User.findAll({
+      include,
       where: options.where,
       limit: options.limit,
       offset: options.offset,
       order: options.order,
     });
 
-    return providers.map(sanitizeProvider);
+    return providers.filter(isProviderAccount).map(sanitizeProvider);
   } catch (error) {
     console.error('Error in getProviders service:', error);
     throw error;
@@ -95,8 +116,8 @@ async function getProviders(options = {}) {
 
 async function updateProvider(providerId, updates) {
   try {
-    const provider = await Provider.findByPk(providerId);
-    if (!provider) {
+    const provider = await User.findByPk(providerId, { include: [baseRoleInclude] });
+    if (!provider || !isProviderAccount(provider)) {
       return null;
     }
 
@@ -113,8 +134,8 @@ async function updateProvider(providerId, updates) {
 
 async function deleteProvider(providerId) {
   try {
-    const deletedCount = await Provider.destroy({
-      where: { provider_id: providerId },
+    const deletedCount = await User.destroy({
+      where: { user_id: providerId },
     });
 
     return deletedCount > 0;
@@ -126,12 +147,13 @@ async function deleteProvider(providerId) {
 
 async function getProviderByEmail(email, options = {}) {
   try {
-    const provider = await Provider.findOne({
+    const include = options.includeRelations ? defaultProviderInclude : [baseRoleInclude];
+    const provider = await User.findOne({
       where: { email },
-      include: options.includeRelations ? defaultProviderInclude : undefined,
+      include,
     });
 
-    return sanitizeProvider(provider);
+    return isProviderAccount(provider) ? sanitizeProvider(provider) : null;
   } catch (error) {
     console.error('Error in getProviderByEmail service:', error);
     throw error;
@@ -140,8 +162,8 @@ async function getProviderByEmail(email, options = {}) {
 
 async function resetProviderPasswordByEmail(email, newPassword) {
   try {
-    const provider = await Provider.findOne({ where: { email } });
-    if (!provider) {
+    const provider = await User.findOne({ where: { email }, include: [baseRoleInclude] });
+    if (!provider || !isProviderAccount(provider)) {
       return null;
     }
 
@@ -163,14 +185,15 @@ async function resetProviderPasswordByEmail(email, newPassword) {
 
 async function authenticateProvider(email, password, roleId) {
   try {
-    const provider = await Provider.findOne({
+    const provider = await User.findOne({
       where: {
         email,
         ...(roleId ? { role_id: roleId } : {}),
-      }
+      },
+      include: [baseRoleInclude],
     });
 
-    if (!provider || !provider.password_hash) {
+    if (!isProviderAccount(provider) || !provider.password_hash) {
       return null;
     }
 

@@ -1,8 +1,8 @@
-const { Blog, BlogMedia, Provider } = require('../models');
+const { Blog, BlogMedia, User } = require('../models');
 
 const defaultBlogInclude = [
   {
-    model: Provider,
+    model: User,
     as: 'provider',
     attributes: { exclude: ['password_hash'] },
   },

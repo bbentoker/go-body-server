@@ -3,8 +3,10 @@ const providerRoleService = require('../services/providerRoleService');
 
 const ADMIN_ROLE_ID = Number.parseInt(process.env.ADMIN_ROLE_ID || '1', 10);
 const WORKER_ROLE_ID = Number.parseInt(process.env.WORKER_ROLE_ID || '2', 10);
-const ADMIN_ROLE_NAME = process.env.ADMIN_ROLE_NAME || 'admin';
-const WORKER_ROLE_NAME = process.env.WORKER_ROLE_NAME || 'worker';
+const ADMIN_ROLE_KEY = process.env.ADMIN_ROLE_KEY || 'admin';
+const WORKER_ROLE_KEY = process.env.WORKER_ROLE_KEY || 'worker';
+const ADMIN_ROLE_NAME = process.env.ADMIN_ROLE_NAME || 'Admin';
+const WORKER_ROLE_NAME = process.env.WORKER_ROLE_NAME || 'Worker';
 
 function asyncHandler(handler) {
   return (req, res, next) => {
@@ -60,7 +62,7 @@ async function ensureRoleExists(roleId, defaults) {
     return null;
   }
 
-  const existingRole = await providerRoleService.getProviderRoleById(roleId);
+  const existingRole = await providerRoleService.getRoleById(roleId);
   if (existingRole) {
     return existingRole;
   }
@@ -69,7 +71,7 @@ async function ensureRoleExists(roleId, defaults) {
     return null;
   }
 
-  return providerRoleService.createProviderRole({
+  return providerRoleService.createRole({
     role_id: roleId,
     ...defaults,
   });
@@ -77,8 +79,10 @@ async function ensureRoleExists(roleId, defaults) {
 
 const createAdminProvider = asyncHandler(async (req, res) => {
   await ensureRoleExists(ADMIN_ROLE_ID, {
+    role_key: ADMIN_ROLE_KEY,
     role_name: ADMIN_ROLE_NAME,
     description: 'Administrative provider role with elevated privileges',
+    is_provider: true,
   });
 
   const { payload, missingRequired } = extractProviderPayload(
@@ -99,8 +103,10 @@ const createAdminProvider = asyncHandler(async (req, res) => {
 
 const createWorkerProvider = asyncHandler(async (req, res) => {
   await ensureRoleExists(WORKER_ROLE_ID, {
+    role_key: WORKER_ROLE_KEY,
     role_name: WORKER_ROLE_NAME,
     description: 'Standard provider role',
+    is_provider: true,
   });
 
   const { payload, missingRequired } = extractProviderPayload(
@@ -138,6 +144,9 @@ const createProvider = asyncHandler(async (req, res) => {
   if (!targetRole) {
     return res.status(400).json({ message: `Role with id ${payload.role_id} does not exist` });
   }
+  if (!targetRole.is_provider) {
+    return res.status(400).json({ message: `Role with id ${payload.role_id} is not a provider/staff role` });
+  }
 
   const provider = await providerService.createProvider(payload);
   return res.status(201).json(provider);
@@ -169,6 +178,9 @@ const updateProvider = asyncHandler(async (req, res) => {
     const targetRole = await ensureRoleExists(payload.role_id);
     if (!targetRole) {
       return res.status(400).json({ message: `Role with id ${payload.role_id} does not exist` });
+    }
+    if (!targetRole.is_provider) {
+      return res.status(400).json({ message: `Role with id ${payload.role_id} is not a provider/staff role` });
     }
   }
   

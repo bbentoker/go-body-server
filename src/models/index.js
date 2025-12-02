@@ -1,11 +1,10 @@
 const sequelize = require('../config/database');
 
 const UserModel = require('./user');
-const ProviderModel = require('./provider');
+const RoleModel = require('./role');
 const ServiceModel = require('./service');
 const ServiceVariantModel = require('./serviceVariant');
 const ProviderServiceRelationModel = require('./providerServiceRelation');
-const ProviderRoleModel = require('./providerRole');
 const ReservationModel = require('./reservation');
 const RefreshTokenModel = require('./refreshToken');
 const LanguageModel = require('./language');
@@ -15,11 +14,10 @@ const PackageModel = require('./package');
 const PackageItemModel = require('./packageItem');
 
 const User = UserModel(sequelize);
-const Provider = ProviderModel(sequelize);
+const Role = RoleModel(sequelize);
 const Service = ServiceModel(sequelize);
 const ServiceVariant = ServiceVariantModel(sequelize);
 const ProviderServiceRelation = ProviderServiceRelationModel(sequelize);
-const ProviderRole = ProviderRoleModel(sequelize);
 const Reservation = ReservationModel(sequelize);
 const RefreshToken = RefreshTokenModel(sequelize);
 const Language = LanguageModel(sequelize);
@@ -37,11 +35,11 @@ Reservation.belongsTo(User, {
   as: 'user',
 });
 
-Provider.hasMany(Reservation, {
+User.hasMany(Reservation, {
   foreignKey: 'provider_id',
-  as: 'reservations',
+  as: 'provider_reservations',
 });
-Reservation.belongsTo(Provider, {
+Reservation.belongsTo(User, {
   foreignKey: 'provider_id',
   as: 'provider',
 });
@@ -65,20 +63,20 @@ Reservation.belongsTo(ServiceVariant, {
   as: 'variant',
 });
 
-Provider.belongsToMany(Service, {
+User.belongsToMany(Service, {
   through: ProviderServiceRelation,
   foreignKey: 'provider_id',
   otherKey: 'service_id',
   as: 'services',
 });
-Service.belongsToMany(Provider, {
+Service.belongsToMany(User, {
   through: ProviderServiceRelation,
   foreignKey: 'service_id',
   otherKey: 'provider_id',
   as: 'providers',
 });
 
-ProviderServiceRelation.belongsTo(Provider, {
+ProviderServiceRelation.belongsTo(User, {
   foreignKey: 'provider_id',
   as: 'provider',
 });
@@ -87,11 +85,11 @@ ProviderServiceRelation.belongsTo(Service, {
   as: 'service',
 });
 
-ProviderRole.hasMany(Provider, {
+Role.hasMany(User, {
   foreignKey: 'role_id',
-  as: 'providers',
+  as: 'users',
 });
-Provider.belongsTo(ProviderRole, {
+User.belongsTo(Role, {
   foreignKey: 'role_id',
   as: 'role',
 });
@@ -105,15 +103,6 @@ RefreshToken.belongsTo(User, {
   as: 'user',
 });
 
-Provider.hasMany(RefreshToken, {
-  foreignKey: 'provider_id',
-  as: 'refreshTokens',
-});
-RefreshToken.belongsTo(Provider, {
-  foreignKey: 'provider_id',
-  as: 'provider',
-});
-
 Language.hasMany(User, {
   foreignKey: 'language_id',
   as: 'users',
@@ -123,20 +112,11 @@ User.belongsTo(Language, {
   as: 'language',
 });
 
-Language.hasMany(Provider, {
-  foreignKey: 'language_id',
-  as: 'providers',
-});
-Provider.belongsTo(Language, {
-  foreignKey: 'language_id',
-  as: 'language',
-});
-
-Provider.hasMany(Blog, {
+User.hasMany(Blog, {
   foreignKey: 'provider_id',
   as: 'blogs',
 });
-Blog.belongsTo(Provider, {
+Blog.belongsTo(User, {
   foreignKey: 'provider_id',
   as: 'provider',
 });
@@ -173,10 +153,9 @@ PackageItem.belongsTo(ServiceVariant, {
 module.exports = {
   sequelize,
   User,
-  Provider,
+  Role,
   Service,
   ServiceVariant,
-  ProviderRole,
   ProviderServiceRelation,
   Reservation,
   RefreshToken,

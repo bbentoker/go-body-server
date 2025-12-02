@@ -2,6 +2,7 @@ const authService = require('../services/authService');
 const providerService = require('../services/providerService');
 
 const ADMIN_ROLE_ID = Number.parseInt(process.env.ADMIN_ROLE_ID || '1', 10);
+const ADMIN_ROLE_KEY = process.env.ADMIN_ROLE_KEY || 'admin';
 
 /**
  * Middleware to verify JWT access token from Authorization header
@@ -24,8 +25,11 @@ async function authenticateToken(req, res, next) {
     // Attach user info to request object
     req.user = {
       id: decoded.id,
-      type: decoded.type, // 'user' or 'provider'
       email: decoded.email,
+      roleId: decoded.role?.id,
+      roleKey: decoded.role?.key,
+      roleName: decoded.role?.name,
+      isProvider: Boolean(decoded.role?.is_provider),
     };
 
     next();
@@ -47,9 +51,9 @@ function authorizeUser(req, res, next) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Check if authenticated user is of type 'user' (not provider)
-    if (req.user.type !== 'user') {
-      return res.status(403).json({ error: 'Access denied. User account required.' });
+    // Check if authenticated user is not a provider/staff account
+    if (req.user.isProvider) {
+      return res.status(403).json({ error: 'Access denied. Customer account required.' });
     }
 
     // Convert both to numbers for comparison (handles string and number types)
@@ -76,7 +80,7 @@ function authenticateProvider(req, res, next) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  if (req.user.type !== 'provider') {
+  if (!req.user.isProvider) {
     return res.status(403).json({ error: 'Access denied. Provider account required.' });
   }
 
@@ -93,7 +97,7 @@ async function authenticateAdmin(req, res, next) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    if (req.user.type !== 'provider') {
+    if (!req.user.isProvider) {
       return res.status(403).json({ error: 'Access denied. Provider account required.' });
     }
 
@@ -111,13 +115,17 @@ async function authenticateAdmin(req, res, next) {
       return res.status(403).json({ error: 'Provider not found' });
     }
 
-    // Check if provider has admin role
-    const providerRoleId = parseInt(provider.role_id, 10);
-    if (providerRoleId !== ADMIN_ROLE_ID) {
-      console.error(`Provider role_id (${providerRoleId}) does not match ADMIN_ROLE_ID (${ADMIN_ROLE_ID})`);
+    const providerRoleId = parseInt(provider.role_id || provider.role?.role_id, 10);
+    const providerRoleKey = provider.role?.role_key;
+    const hasAdminId = providerRoleId === ADMIN_ROLE_ID;
+    const hasAdminKey = providerRoleKey
+      && providerRoleKey.toLowerCase() === ADMIN_ROLE_KEY.toLowerCase();
+
+    if (!hasAdminId && !hasAdminKey) {
+      console.error(`Provider role does not match admin requirements. role_id=${providerRoleId}, role_key=${providerRoleKey}`);
       return res.status(403).json({ 
         error: 'Access denied. Admin privileges required.',
-        details: `Expected role_id: ${ADMIN_ROLE_ID}, got: ${providerRoleId}`
+        details: `Expected role_id ${ADMIN_ROLE_ID} or role_key ${ADMIN_ROLE_KEY}`,
       });
     }
 

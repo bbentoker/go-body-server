@@ -3,11 +3,7 @@ const authController = require('../controllers/authController');
 
 const router = express.Router();
 
-// Provider login routes
-router.post('/admin/login', authController.loginAdminProvider);
-router.post('/worker/login', authController.loginWorkerProvider);
-
-// User registration and login routes
+// User registration and login routes (login covers all roles)
 router.post('/user/register', authController.registerUser);
 router.post('/user/login', authController.loginUser);
 router.post('/user/reset-password', authController.resetUserPassword);

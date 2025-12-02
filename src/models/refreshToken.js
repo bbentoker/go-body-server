@@ -21,13 +21,6 @@ module.exports = (sequelize) => {
           key: 'user_id',
         },
       },
-      provider_id: {
-        type: DataTypes.BIGINT,
-        references: {
-          model: 'providers',
-          key: 'provider_id',
-        },
-      },
       expires_at: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -46,16 +39,6 @@ module.exports = (sequelize) => {
       timestamps: true,
       createdAt: 'created_at',
       updatedAt: false,
-      validate: {
-        checkTokenOwner() {
-          const hasUser = this.user_id !== null && this.user_id !== undefined;
-          const hasProvider = this.provider_id !== null && this.provider_id !== undefined;
-          
-          if ((hasUser && hasProvider) || (!hasUser && !hasProvider)) {
-            throw new Error('RefreshToken must belong to either a user or a provider, not both or neither');
-          }
-        },
-      },
       indexes: [
         {
           name: 'idx_refresh_tokens_token_hash',
@@ -64,10 +47,6 @@ module.exports = (sequelize) => {
         {
           name: 'idx_refresh_tokens_user_id',
           fields: ['user_id'],
-        },
-        {
-          name: 'idx_refresh_tokens_provider_id',
-          fields: ['provider_id'],
         },
         {
           name: 'idx_refresh_tokens_expires_at',

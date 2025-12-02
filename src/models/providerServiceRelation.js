@@ -8,8 +8,8 @@ module.exports = (sequelize) => {
         type: DataTypes.BIGINT,
         primaryKey: true,
         references: {
-          model: 'providers',
-          key: 'provider_id',
+          model: 'users',
+          key: 'user_id',
         },
         onDelete: 'CASCADE',
       },

@@ -9,6 +9,12 @@ module.exports = (sequelize) => {
         primaryKey: true,
         autoIncrement: true,
       },
+      provider_id: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          return this.getDataValue('user_id');
+        },
+      },
       first_name: {
         type: DataTypes.STRING(100),
         allowNull: false,
@@ -30,6 +36,24 @@ module.exports = (sequelize) => {
       },
       password_hash: {
         type: DataTypes.STRING(255),
+      },
+      role_id: {
+        type: DataTypes.BIGINT,
+        references: {
+          model: 'roles',
+          key: 'role_id',
+        },
+      },
+      title: {
+        type: DataTypes.STRING(100),
+      },
+      bio: {
+        type: DataTypes.TEXT,
+      },
+      is_active: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
       },
       is_verified: {
         type: DataTypes.BOOLEAN,
@@ -55,7 +79,7 @@ module.exports = (sequelize) => {
       tableName: 'users',
       timestamps: true,
       createdAt: 'created_at',
-      updatedAt: false,
+      updatedAt: 'updated_at',
     }
   );
 

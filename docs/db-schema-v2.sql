@@ -11,13 +11,53 @@ CREATE TABLE languages (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE provider_roles (
+INSERT INTO languages (language_id, code, name, native_name) VALUES
+    (1, 'en', 'English', 'English'),
+    (2, 'es', 'Spanish', 'Español'),
+    (3, 'zh', 'Chinese', '中文'),
+    (4, 'tr', 'Turkish', 'Türkçe'),
+    (5, 'ar', 'Arabic', 'العربية'),
+    (6, 'ru', 'Russian', 'Русский'),
+    (7, 'id', 'Indonesian', 'Bahasa Indonesia');
+    
+CREATE TABLE roles (
     role_id SERIAL PRIMARY KEY,
-    role_name VARCHAR(100) NOT NULL UNIQUE,
+    role_key VARCHAR(50) NOT NULL UNIQUE, -- e.g., 'admin', 'worker', 'customer'
+    role_name VARCHAR(100) NOT NULL,
     description TEXT,
+    is_provider BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE
 );
+
+-- Seed roles (adjust IDs/keys to match your environment)
+INSERT INTO roles (role_id, role_key, role_name, description, is_provider)
+VALUES
+  (1, 'admin', 'Admin', 'Administrative staff with elevated privileges', true),
+  (2, 'worker', 'Worker', 'Standard provider/staff account', true),
+  (3, 'customer', 'Customer', 'Default customer account', false)
+ON CONFLICT (role_key) DO UPDATE SET
+  role_name = EXCLUDED.role_name,
+  description = EXCLUDED.description,
+  is_provider = EXCLUDED.is_provider;
+
+-- Seed admin user (password hash is for 'ChangeMe123!' — rotate in production)
+INSERT INTO users (user_id, role_id, first_name, last_name, email, phone_number, password_hash, title, bio, is_active, is_verified, language_id)
+VALUES (
+  1,
+  1, -- admin role
+  'Gizem',
+  'Özlü',
+  'gizem@go-body.co',
+  NULL,
+  '$2b$10$CwTycUXWue0Thq9StjUM0uJ8p8N3DybZ0fjrqHO1B2c7JB/ZIyB9W',
+  'Administrator',
+  'Seed admin user',
+  true,
+  true,
+  4
+)
+ON CONFLICT (email) DO NOTHING;
 
 -- ==========================================
 -- 2. ACTORS (Users & Providers)
@@ -25,19 +65,7 @@ CREATE TABLE provider_roles (
 
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    phone_number VARCHAR(50),
-    password_hash VARCHAR(255),
-    is_verified BOOLEAN NOT NULL DEFAULT false,
-    language_id INTEGER REFERENCES languages(language_id) DEFAULT 4, -- Assumes 4 is TR
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE
-);
-
-CREATE TABLE providers (
-    provider_id SERIAL PRIMARY KEY,
+    role_id INTEGER REFERENCES roles(role_id),
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -45,10 +73,9 @@ CREATE TABLE providers (
     password_hash VARCHAR(255),
     title VARCHAR(100),
     bio TEXT,
-    role_id INTEGER NOT NULL REFERENCES provider_roles(role_id),
     is_active BOOLEAN NOT NULL DEFAULT true,
     is_verified BOOLEAN NOT NULL DEFAULT false,
-    language_id INTEGER REFERENCES languages(language_id) DEFAULT 4,
+    language_id INTEGER REFERENCES languages(language_id) DEFAULT 4, -- Assumes 4 is TR
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE
 );
@@ -82,7 +109,7 @@ CREATE TABLE service_variants (
 
 -- Junction: Which providers perform which base services
 CREATE TABLE provider_services (
-    provider_id INTEGER NOT NULL REFERENCES providers(provider_id) ON DELETE CASCADE,
+    provider_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     service_id INTEGER NOT NULL REFERENCES services(service_id) ON DELETE CASCADE,
     PRIMARY KEY (provider_id, service_id)
 );
@@ -148,7 +175,7 @@ CREATE TABLE user_package_items (
 CREATE TABLE reservations (
     reservation_id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(user_id),
-    provider_id INTEGER REFERENCES providers(provider_id),
+    provider_id INTEGER REFERENCES users(user_id),
     
     -- What is being performed?
     variant_id INTEGER NOT NULL REFERENCES service_variants(variant_id),
@@ -177,19 +204,14 @@ CREATE TABLE refresh_tokens (
     token_id SERIAL PRIMARY KEY,
     token_hash VARCHAR(255) NOT NULL UNIQUE,
     user_id INTEGER REFERENCES users(user_id),
-    provider_id INTEGER REFERENCES providers(provider_id),
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    revoked_at TIMESTAMP WITH TIME ZONE,
-    CONSTRAINT check_owner CHECK (
-        (user_id IS NOT NULL AND provider_id IS NULL) OR 
-        (user_id IS NULL AND provider_id IS NOT NULL)
-    )
+    revoked_at TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE blogs (
     blog_id SERIAL PRIMARY KEY,
-    provider_id INTEGER NOT NULL REFERENCES providers(provider_id),
+    provider_id INTEGER NOT NULL REFERENCES users(user_id),
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
     cover_image_url TEXT,

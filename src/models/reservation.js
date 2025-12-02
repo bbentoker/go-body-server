@@ -21,8 +21,8 @@ module.exports = (sequelize) => {
       provider_id: {
         type: DataTypes.BIGINT,
         references: {
-          model: 'providers',
-          key: 'provider_id',
+          model: 'users',
+          key: 'user_id',
         },
       },
       variant_id: {

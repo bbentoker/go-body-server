@@ -1,12 +1,19 @@
 const providerService = require('../services/providerService');
 const userService = require('../services/userService');
 const authService = require('../services/authService');
-const providerRoleService = require('../services/providerRoleService');
+const roleService = require('../services/providerRoleService');
 
 const ADMIN_ROLE_ID = Number.parseInt(process.env.ADMIN_ROLE_ID || '1', 10);
 const WORKER_ROLE_ID = Number.parseInt(process.env.WORKER_ROLE_ID || '2', 10);
-const ADMIN_ROLE_NAME = process.env.ADMIN_ROLE_NAME || 'admin';
-const WORKER_ROLE_NAME = process.env.WORKER_ROLE_NAME || 'worker';
+const CUSTOMER_ROLE_ID = Number.parseInt(process.env.CUSTOMER_ROLE_ID || '3', 10);
+
+const ADMIN_ROLE_KEY = process.env.ADMIN_ROLE_KEY || 'admin';
+const WORKER_ROLE_KEY = process.env.WORKER_ROLE_KEY || 'worker';
+const CUSTOMER_ROLE_KEY = process.env.CUSTOMER_ROLE_KEY || 'customer';
+
+const ADMIN_ROLE_NAME = process.env.ADMIN_ROLE_NAME || 'Admin';
+const WORKER_ROLE_NAME = process.env.WORKER_ROLE_NAME || 'Worker';
+const CUSTOMER_ROLE_NAME = process.env.CUSTOMER_ROLE_NAME || 'Customer';
 
 function asyncHandler(handler) {
   return (req, res, next) => {
@@ -19,7 +26,7 @@ async function ensureRoleExists(roleId, defaults) {
     return null;
   }
 
-  const existingRole = await providerRoleService.getProviderRoleById(roleId);
+  const existingRole = await roleService.getRoleById(roleId);
   if (existingRole) {
     return existingRole;
   }
@@ -28,7 +35,7 @@ async function ensureRoleExists(roleId, defaults) {
     return null;
   }
 
-  return providerRoleService.createProviderRole({
+  return roleService.createRole({
     role_id: roleId,
     ...defaults,
   });
@@ -36,8 +43,10 @@ async function ensureRoleExists(roleId, defaults) {
 
 const loginAdminProvider = asyncHandler(async (req, res) => {
   await ensureRoleExists(ADMIN_ROLE_ID, {
+    role_key: ADMIN_ROLE_KEY,
     role_name: ADMIN_ROLE_NAME,
-    description: 'Administrative provider role with elevated privileges',
+    description: 'Administrative role with elevated privileges',
+    is_provider: true,
   });
   
   const { email, password } = req.body;
@@ -45,23 +54,25 @@ const loginAdminProvider = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Email and password are required' });
   }
 
-  const provider = await providerService.authenticateProvider(email, password, ADMIN_ROLE_ID);
-  if (!provider) {
+  const provider = await userService.authenticateUser(email, password, { roleIds: [ADMIN_ROLE_ID] });
+  if (!provider || !provider.role?.is_provider) {
     return res.status(401).json({ message: 'Invalid admin credentials' });
   }
 
-  const tokens = await authService.generateTokenPair(provider, 'provider');
+  const tokens = await authService.generateTokenPair(provider);
   
   return res.json({
-    provider,
+    user: provider,
     ...tokens,
   });
 });
 
 const loginWorkerProvider = asyncHandler(async (req, res) => {
   await ensureRoleExists(WORKER_ROLE_ID, {
+    role_key: WORKER_ROLE_KEY,
     role_name: WORKER_ROLE_NAME,
     description: 'Standard provider role',
+    is_provider: true,
   });
 
   const { email, password } = req.body;
@@ -69,15 +80,15 @@ const loginWorkerProvider = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Email and password are required' });
   }
 
-  const provider = await providerService.authenticateProvider(email, password, WORKER_ROLE_ID);
-  if (!provider) {
+  const provider = await userService.authenticateUser(email, password, { roleIds: [WORKER_ROLE_ID] });
+  if (!provider || !provider.role?.is_provider) {
     return res.status(401).json({ message: 'Invalid worker credentials' });
   }
 
-  const tokens = await authService.generateTokenPair(provider, 'provider');
+  const tokens = await authService.generateTokenPair(provider);
   
   return res.json({
-    provider,
+    user: provider,
     ...tokens,
   });
 });
@@ -85,40 +96,43 @@ const loginWorkerProvider = asyncHandler(async (req, res) => {
 const registerUser = asyncHandler(async (req, res) => {
   const { first_name, last_name, email, password, phone_number, language_id } = req.body;
 
-  // Validate required fields
+  await ensureRoleExists(CUSTOMER_ROLE_ID, {
+    role_key: CUSTOMER_ROLE_KEY,
+    role_name: CUSTOMER_ROLE_NAME,
+    description: 'Standard customer account',
+    is_provider: false,
+  });
+
   if (!first_name || !last_name || !email || !password) {
     return res.status(400).json({ 
       message: 'First name, last name, email, and password are required' 
     });
   }
 
-  // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({ message: 'Invalid email format' });
   }
 
-  // Validate password strength (minimum 6 characters)
   if (password.length < 6) {
     return res.status(400).json({ 
       message: 'Password must be at least 6 characters long' 
     });
   }
 
-  // Check if user already exists
   const existingUser = await userService.getUserByEmail(email);
   if (existingUser) {
     return res.status(409).json({ message: 'User with this email already exists' });
   }
 
-  // Create user
   const userData = {
     first_name,
     last_name,
     email,
     password,
     phone_number,
-    language_id: language_id || 4, // Default to Turkish if not provided
+    language_id: language_id || 4,
+    role_id: CUSTOMER_ROLE_ID,
     is_verified: false,
   };
 
@@ -128,8 +142,7 @@ const registerUser = asyncHandler(async (req, res) => {
     return res.status(500).json({ message: 'Failed to create user' });
   }
 
-  // Generate tokens
-  const tokens = await authService.generateTokenPair(user, 'user');
+  const tokens = await authService.generateTokenPair(user);
   
   return res.status(201).json({
     message: 'User registered successfully',
@@ -143,13 +156,12 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });
   }
-
   const user = await userService.authenticateUser(email, password);
   if (!user) {
-    return res.status(401).json({ message: 'Invalid user credentials' });
+    return res.status(401).json({ message: 'Invalid credentials' });
   }
 
-  const tokens = await authService.generateTokenPair(user, 'user');
+  const tokens = await authService.generateTokenPair(user);
   
   return res.json({
     user,
@@ -189,17 +201,13 @@ const logout = asyncHandler(async (req, res) => {
 });
 
 const logoutAll = asyncHandler(async (req, res) => {
-  const { userId, type } = req.body;
+  const { userId } = req.body;
   
-  if (!userId || !type) {
-    return res.status(400).json({ message: 'userId and type (user/provider) are required' });
-  }
-
-  if (type !== 'user' && type !== 'provider') {
-    return res.status(400).json({ message: 'type must be either "user" or "provider"' });
+  if (!userId) {
+    return res.status(400).json({ message: 'userId is required' });
   }
   
-  await authService.revokeAllUserTokens(userId, type);
+  await authService.revokeAllUserTokens(userId);
   
   return res.json({ message: 'All sessions logged out successfully' });
 });
@@ -243,8 +251,6 @@ const resetProviderPassword = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  loginAdminProvider,
-  loginWorkerProvider,
   registerUser,
   loginUser,
   refreshToken,
@@ -253,4 +259,3 @@ module.exports = {
   resetUserPassword,
   resetProviderPassword,
 };
-

@@ -24,9 +24,12 @@ router.get('/protected', authenticateToken, controller.protectedRoute);
 **Attached data:**
 ```javascript
 req.user = {
-  id: 1,              // user_id or provider_id
-  type: 'user',       // 'user' or 'provider'
-  email: 'user@example.com'
+  id: 1,
+  email: 'user@example.com',
+  roleId: 3,
+  roleKey: 'customer',  // e.g. admin, worker, customer
+  roleName: 'Customer',
+  isProvider: false
 }
 ```
 
@@ -42,7 +45,7 @@ router.get('/user/:userId/data', authenticateToken, authorizeUser, controller.ge
 
 **What it does:**
 - Checks if user is authenticated
-- Verifies user type is 'user' (not provider)
+- Verifies the account is not a provider/staff role (`isProvider` must be false)
 - Validates that `req.user.id` matches `req.params.userId`
 - Prevents users from accessing other users' data
 
@@ -56,6 +59,8 @@ Verifies the authenticated user is a provider.
 router.get('/provider/dashboard', authenticateToken, authenticateProvider, controller.dashboard);
 ```
 
+- Requires `req.user.isProvider === true` (role has `is_provider = true`).
+
 ---
 
 ### 4. `authenticateAdmin`
@@ -65,6 +70,8 @@ Verifies the authenticated user is an admin provider.
 ```javascript
 router.post('/admin/settings', authenticateToken, authenticateAdmin, controller.updateSettings);
 ```
+
+- Requires `req.user.isProvider === true` and `role_key/role_id` matching the admin role.
 
 ---
 

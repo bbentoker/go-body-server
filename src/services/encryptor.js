@@ -39,6 +39,13 @@ async function hashPassword(password) {
   return `pbkdf2$${DIGEST}$${ITERATIONS}$${salt}$${derivedKey.toString('hex')}`;
 }
 
+/**
+ * Hash an arbitrary string using the same PBKDF2 routine as passwords.
+ */
+async function hashString(value) {
+  return hashPassword(String(value || ''));
+}
+
 async function verifyPassword(password, storedHash) {
   if (!password || !storedHash) {
     return false;
@@ -99,6 +106,7 @@ function decrypt(payload) {
 
 module.exports = {
   hashPassword,
+  hashString,
   verifyPassword,
   encrypt,
   decrypt,

@@ -1,19 +1,18 @@
 # Database Structure Documentation
 
-This document contains the complete database structure based on all Sequelize model files.
+This summarizes the schema generated from the Sequelize models after merging providers into the unified `users` table with a role system.
 
 ## Table of Contents
 1. [Users](#users)
-2. [Providers](#providers)
-3. [Provider Roles](#provider-roles)
-4. [Services](#services)
-5. [Provider Service Relations](#provider-service-relations)
-6. [Reservations](#reservations)
-7. [Languages](#languages)
-8. [Refresh Tokens](#refresh-tokens)
-9. [Blogs](#blogs)
-10. [Blog Media](#blog-media)
-11. [Relationships](#relationships)
+2. [Roles](#roles)
+3. [Services](#services)
+4. [Provider Service Relations](#provider-service-relations)
+5. [Reservations](#reservations)
+6. [Languages](#languages)
+7. [Refresh Tokens](#refresh-tokens)
+8. [Blogs](#blogs)
+9. [Blog Media](#blog-media)
+10. [Relationships](#relationships)
 
 ---
 
@@ -25,68 +24,49 @@ This document contains the complete database structure based on all Sequelize mo
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
 | `user_id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique user identifier |
-| `first_name` | STRING(100) | NOT NULL | User's first name |
-| `last_name` | STRING(100) | NOT NULL | User's last name |
-| `email` | STRING(255) | NOT NULL, UNIQUE, EMAIL VALIDATION | User's email address |
-| `phone_number` | STRING(50) | NULLABLE | User's phone number |
+| `provider_id` | VIRTUAL | Mirrors `user_id` | Convenience alias for provider-facing APIs |
+| `role_id` | BIGINT | FOREIGN KEY → `roles.role_id` | Role assignment (admin/worker/customer) |
+| `first_name` | STRING(100) | NOT NULL | First name |
+| `last_name` | STRING(100) | NOT NULL | Last name |
+| `email` | STRING(255) | NOT NULL, UNIQUE, EMAIL | Email address |
+| `phone_number` | STRING(50) | NULLABLE | Phone number |
 | `password_hash` | STRING(255) | NULLABLE | Hashed password |
-| `is_verified` | BOOLEAN | NOT NULL, DEFAULT: false | Email verification status |
-| `language_id` | BIGINT | NOT NULL, DEFAULT: 4, FOREIGN KEY → `languages.language_id` | Preferred language (Turkish default) |
-| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Account creation timestamp |
+| `title` | STRING(100) | NULLABLE | Provider/staff title |
+| `bio` | TEXT | NULLABLE | Provider/staff bio |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT: true | Active flag |
+| `is_verified` | BOOLEAN | NOT NULL, DEFAULT: false | Verification flag |
+| `language_id` | BIGINT | FOREIGN KEY → `languages.language_id`, DEFAULT: 4 | Preferred language |
+| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Created timestamp |
+| `updated_at` | DATE | NULLABLE | Updated timestamp |
 
 **Relationships:**
-- Has many `Reservations` (as `reservations`)
-- Has many `RefreshTokens` (as `refreshTokens`)
-- Belongs to `Language` (as `language`)
+- Has many `Reservations` as `reservations` (customer bookings)
+- Has many `Reservations` as `provider_reservations` (when acting as provider)
+- Has many `RefreshTokens` as `refreshTokens`
+- Belongs to `Language` as `language`
+- Belongs to `Role` as `role`
+- Belongs to many `Services` through `ProviderServiceRelation` as `services`
+- Has many `Blogs` as `blogs`
 
 ---
 
-## Providers
+## Roles
 
-**Table Name:** `providers`  
-**Model Name:** `Provider`
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `provider_id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique provider identifier |
-| `first_name` | STRING(100) | NOT NULL | Provider's first name |
-| `last_name` | STRING(100) | NOT NULL | Provider's last name |
-| `email` | STRING(255) | NOT NULL, UNIQUE, EMAIL VALIDATION | Provider's email address |
-| `phone_number` | STRING(50) | NULLABLE | Provider's phone number |
-| `password_hash` | STRING(255) | NULLABLE | Hashed password |
-| `title` | STRING(100) | NULLABLE | Professional title |
-| `bio` | TEXT | NULLABLE | Provider biography |
-| `role_id` | BIGINT | NOT NULL, FOREIGN KEY → `provider_roles.role_id` | Provider role identifier |
-| `is_active` | BOOLEAN | NOT NULL, DEFAULT: true | Active status |
-| `is_verified` | BOOLEAN | NOT NULL, DEFAULT: false | Verification status |
-| `language_id` | BIGINT | NOT NULL, DEFAULT: 4, FOREIGN KEY → `languages.language_id` | Preferred language (Turkish default) |
-| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Account creation timestamp |
-
-**Relationships:**
-- Has many `Reservations` (as `reservations`)
-- Has many `RefreshTokens` (as `refreshTokens`)
-- Has many `Blogs` (as `blogs`)
-- Belongs to `ProviderRole` (as `role`)
-- Belongs to `Language` (as `language`)
-- Belongs to many `Services` through `ProviderServiceRelation` (as `services`)
-
----
-
-## Provider Roles
-
-**Table Name:** `provider_roles`  
-**Model Name:** `ProviderRole`
+**Table Name:** `roles`  
+**Model Name:** `Role`
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
 | `role_id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique role identifier |
-| `role_name` | STRING(100) | NOT NULL, UNIQUE | Role name |
-| `description` | TEXT | NULLABLE | Role description |
-| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Creation timestamp |
-| `updated_at` | DATE | NULLABLE | Last update timestamp |
+| `role_key` | STRING(50) | NOT NULL, UNIQUE | Machine key (`admin`, `worker`, `customer`) |
+| `role_name` | STRING(100) | NOT NULL | Display name |
+| `description` | TEXT | NULLABLE | Details |
+| `is_provider` | BOOLEAN | NOT NULL, DEFAULT: false | Flag for provider/staff roles |
+| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Created timestamp |
+| `updated_at` | DATE | NULLABLE | Updated timestamp |
 
 **Relationships:**
-- Has many `Providers` (as `providers`)
+- Has many `Users` as `users`
 
 ---
 
@@ -99,15 +79,15 @@ This document contains the complete database structure based on all Sequelize mo
 |-------|------|-------------|-------------|
 | `service_id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique service identifier |
 | `name` | STRING(255) | NOT NULL | Service name |
-| `description` | TEXT | NULLABLE | Service description |
-| `duration_minutes` | INTEGER | NOT NULL, MIN: 1 | Service duration in minutes |
-| `price` | DECIMAL(10, 2) | NOT NULL, MIN: 0 | Service price |
-| `is_active` | BOOLEAN | NOT NULL, DEFAULT: true | Active status |
-| `requires_provider` | BOOLEAN | NOT NULL, DEFAULT: true | Whether service requires a provider |
+| `description` | TEXT | NULLABLE | Description |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT: true | Active flag |
+| `notes` | TEXT | NULLABLE | Notes |
+| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Created timestamp |
+| `updated_at` | DATE | NULLABLE | Updated timestamp |
 
 **Relationships:**
-- Has many `Reservations` (as `reservations`)
-- Belongs to many `Providers` through `ProviderServiceRelation` (as `providers`)
+- Has many `ServiceVariants` as `variants`
+- Belongs to many `Users` (provider roles) through `ProviderServiceRelation` as `providers`
 
 ---
 
@@ -118,14 +98,12 @@ This document contains the complete database structure based on all Sequelize mo
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| `provider_id` | BIGINT | PRIMARY KEY, FOREIGN KEY → `providers.provider_id`, CASCADE DELETE | Provider identifier |
+| `provider_id` | BIGINT | PRIMARY KEY, FOREIGN KEY → `users.user_id`, CASCADE DELETE | User acting as provider |
 | `service_id` | BIGINT | PRIMARY KEY, FOREIGN KEY → `services.service_id`, CASCADE DELETE | Service identifier |
 
-**Note:** This is a junction table for the many-to-many relationship between Providers and Services.
-
 **Relationships:**
-- Belongs to `Provider` (as `provider`)
-- Belongs to `Service` (as `service`)
+- Belongs to `User` as `provider`
+- Belongs to `Service` as `service`
 
 ---
 
@@ -137,24 +115,21 @@ This document contains the complete database structure based on all Sequelize mo
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
 | `reservation_id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique reservation identifier |
-| `user_id` | BIGINT | NULLABLE, FOREIGN KEY → `users.user_id` | User who made the reservation |
-| `provider_id` | BIGINT | NULLABLE, FOREIGN KEY → `providers.provider_id` | Provider for the reservation |
-| `service_id` | BIGINT | NULLABLE, FOREIGN KEY → `services.service_id` | Service being reserved |
-| `start_time` | DATE | NOT NULL | Reservation start time |
-| `end_time` | DATE | NOT NULL | Reservation end time |
-| `status` | STRING(50) | NOT NULL, DEFAULT: 'pending', ENUM: ['pending', 'confirmed', 'cancelled', 'completed', 'no_show'] | Reservation status |
-| `total_price` | DECIMAL(10, 2) | NOT NULL, MIN: 0 | Total price for the reservation |
-| `notes` | TEXT | NULLABLE | Additional notes |
-| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Creation timestamp |
-| `updated_at` | DATE | NULLABLE | Last update timestamp |
-
-**Validations:**
-- `end_time` must be after `start_time`
+| `user_id` | BIGINT | FOREIGN KEY → `users.user_id` | Customer |
+| `provider_id` | BIGINT | FOREIGN KEY → `users.user_id` | Assigned provider/staff |
+| `variant_id` | BIGINT | NOT NULL, FOREIGN KEY → `service_variants.variant_id` | Service variant |
+| `user_package_item_id` | BIGINT | FOREIGN KEY → `user_package_items.ledger_id` | Optional package credit |
+| `start_time` | DATE | NOT NULL | Start time |
+| `end_time` | DATE | NOT NULL | End time |
+| `status` | STRING(50) | NOT NULL, DEFAULT: `pending` | `pending`, `confirmed`, `cancelled`, `completed`, `no_show` |
+| `notes` | TEXT | NULLABLE | Notes |
+| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Created timestamp |
+| `updated_at` | DATE | NULLABLE | Updated timestamp |
 
 **Relationships:**
-- Belongs to `User` (as `user`)
-- Belongs to `Provider` (as `provider`)
-- Belongs to `Service` (as `service`)
+- Belongs to `User` as `user`
+- Belongs to `User` as `provider`
+- Belongs to `ServiceVariant` as `variant`
 
 ---
 
@@ -166,15 +141,14 @@ This document contains the complete database structure based on all Sequelize mo
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
 | `language_id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique language identifier |
-| `code` | STRING(10) | NOT NULL, UNIQUE | Language code (e.g., 'en', 'tr') |
-| `name` | STRING(100) | NOT NULL | Language name |
-| `native_name` | STRING(100) | NOT NULL | Native language name |
-| `is_active` | BOOLEAN | NOT NULL, DEFAULT: true | Active status |
-| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Creation timestamp |
+| `code` | STRING(10) | NOT NULL, UNIQUE | ISO code |
+| `name` | STRING(100) | NOT NULL | English name |
+| `native_name` | STRING(100) | NOT NULL | Localized name |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT: true | Active flag |
+| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Created timestamp |
 
 **Relationships:**
-- Has many `Users` (as `users`)
-- Has many `Providers` (as `providers`)
+- Has many `Users` as `users`
 
 ---
 
@@ -186,25 +160,14 @@ This document contains the complete database structure based on all Sequelize mo
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
 | `token_id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique token identifier |
-| `token_hash` | STRING(255) | NOT NULL, UNIQUE | Hashed refresh token |
-| `user_id` | BIGINT | NULLABLE, FOREIGN KEY → `users.user_id` | Associated user (mutually exclusive with provider_id) |
-| `provider_id` | BIGINT | NULLABLE, FOREIGN KEY → `providers.provider_id` | Associated provider (mutually exclusive with user_id) |
-| `expires_at` | DATE | NOT NULL | Token expiration timestamp |
-| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Creation timestamp |
-| `revoked_at` | DATE | NULLABLE | Token revocation timestamp |
-
-**Validations:**
-- Must belong to either a user OR a provider, not both or neither
-
-**Indexes:**
-- `idx_refresh_tokens_token_hash` on `token_hash`
-- `idx_refresh_tokens_user_id` on `user_id`
-- `idx_refresh_tokens_provider_id` on `provider_id`
-- `idx_refresh_tokens_expires_at` on `expires_at`
+| `token_hash` | STRING(255) | NOT NULL, UNIQUE | SHA-256 hash of token |
+| `user_id` | BIGINT | FOREIGN KEY → `users.user_id` | Owner |
+| `expires_at` | DATE | NOT NULL | Expiration timestamp |
+| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Created timestamp |
+| `revoked_at` | DATE | NULLABLE | Revocation timestamp |
 
 **Relationships:**
-- Belongs to `User` (as `user`) - optional
-- Belongs to `Provider` (as `provider`) - optional
+- Belongs to `User` as `user`
 
 ---
 
@@ -215,19 +178,19 @@ This document contains the complete database structure based on all Sequelize mo
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| `blog_id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique blog post identifier |
-| `provider_id` | BIGINT | NOT NULL, FOREIGN KEY → `providers.provider_id` | Provider who created the blog |
-| `title` | STRING(255) | NOT NULL | Blog post title |
-| `content` | TEXT | NOT NULL | Blog post content |
-| `cover_image_url` | TEXT | NULLABLE | Cover image URL |
-| `is_published` | BOOLEAN | NOT NULL, DEFAULT: false | Publication status |
-| `published_at` | DATE | NULLABLE | Publication timestamp |
-| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Creation timestamp |
-| `updated_at` | DATE | NULLABLE | Last update timestamp |
+| `blog_id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique blog identifier |
+| `provider_id` | BIGINT | NOT NULL, FOREIGN KEY → `users.user_id` | Author (provider role) |
+| `title` | STRING(255) | NOT NULL | Title |
+| `content` | TEXT | NOT NULL | Content |
+| `cover_image_url` | TEXT | NULLABLE | Cover image |
+| `is_published` | BOOLEAN | NOT NULL, DEFAULT: false | Publication flag |
+| `published_at` | DATE | NULLABLE | Published timestamp |
+| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Created timestamp |
+| `updated_at` | DATE | NULLABLE | Updated timestamp |
 
 **Relationships:**
-- Belongs to `Provider` (as `provider`)
-- Has many `BlogMedia` (as `media`, CASCADE DELETE)
+- Belongs to `User` as `provider`
+- Has many `BlogMedia` as `media`
 
 ---
 
@@ -239,96 +202,24 @@ This document contains the complete database structure based on all Sequelize mo
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
 | `media_id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique media identifier |
-| `blog_id` | BIGINT | NOT NULL, FOREIGN KEY → `blogs.blog_id` | Associated blog post |
-| `media_type` | ENUM | NOT NULL, DEFAULT: 'image', VALUES: ['image', 'video'] | Type of media |
-| `object_key` | STRING(512) | NOT NULL | Storage object key |
-| `url` | TEXT | NOT NULL | Media URL |
-| `alt_text` | STRING(255) | NULLABLE | Alternative text for accessibility |
-| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Creation timestamp |
-| `updated_at` | DATE | NULLABLE | Last update timestamp |
+| `blog_id` | BIGINT | NOT NULL, FOREIGN KEY → `blogs.blog_id`, CASCADE DELETE | Parent blog |
+| `media_type` | STRING(20) | NOT NULL, DEFAULT: `image`, ENUM: `image`, `video` | Media type |
+| `object_key` | STRING(512) | NOT NULL | Storage key |
+| `url` | TEXT | NOT NULL | Public URL |
+| `alt_text` | STRING(255) | NULLABLE | Alt text |
+| `created_at` | DATE | NOT NULL, DEFAULT: NOW | Created timestamp |
+| `updated_at` | DATE | NULLABLE | Updated timestamp |
 
 **Relationships:**
-- Belongs to `Blog` (as `blog`, CASCADE DELETE)
+- Belongs to `Blog` as `blog`
 
 ---
 
 ## Relationships
 
-### Entity Relationship Summary
-
-```
-Users
-├── Has many Reservations
-├── Has many RefreshTokens
-└── Belongs to Language
-
-Providers
-├── Has many Reservations
-├── Has many RefreshTokens
-├── Has many Blogs
-├── Belongs to ProviderRole
-├── Belongs to Language
-└── Belongs to many Services (through ProviderServiceRelation)
-
-ProviderRoles
-└── Has many Providers
-
-Services
-├── Has many Reservations
-└── Belongs to many Providers (through ProviderServiceRelation)
-
-ProviderServiceRelation (Junction Table)
-├── Belongs to Provider
-└── Belongs to Service
-
-Reservations
-├── Belongs to User
-├── Belongs to Provider
-└── Belongs to Service
-
-Languages
-├── Has many Users
-└── Has many Providers
-
-RefreshTokens
-├── Belongs to User (optional, mutually exclusive with provider)
-└── Belongs to Provider (optional, mutually exclusive with user)
-
-Blogs
-├── Belongs to Provider
-└── Has many BlogMedia (CASCADE DELETE)
-
-BlogMedia
-└── Belongs to Blog (CASCADE DELETE)
-```
-
-### Foreign Key Relationships
-
-| From Table | From Column | To Table | To Column | On Delete |
-|------------|-------------|----------|-----------|-----------|
-| `users` | `language_id` | `languages` | `language_id` | - |
-| `providers` | `role_id` | `provider_roles` | `role_id` | - |
-| `providers` | `language_id` | `languages` | `language_id` | - |
-| `provider_services` | `provider_id` | `providers` | `provider_id` | CASCADE |
-| `provider_services` | `service_id` | `services` | `service_id` | CASCADE |
-| `reservations` | `user_id` | `users` | `user_id` | - |
-| `reservations` | `provider_id` | `providers` | `provider_id` | - |
-| `reservations` | `service_id` | `services` | `service_id` | - |
-| `refresh_tokens` | `user_id` | `users` | `user_id` | - |
-| `refresh_tokens` | `provider_id` | `providers` | `provider_id` | - |
-| `blogs` | `provider_id` | `providers` | `provider_id` | - |
-| `blog_media` | `blog_id` | `blogs` | `blog_id` | CASCADE |
-
----
-
-## Notes
-
-- All timestamps use `DataTypes.NOW` as default for `created_at` fields
-- Some tables have `updated_at` fields that are automatically managed by Sequelize
-- The `RefreshToken` model has a custom validation ensuring it belongs to either a user OR a provider, not both
-- The `Reservation` model validates that `end_time` must be after `start_time`
-- Default language is set to 4 (Turkish) for both Users and Providers
-- `ProviderServiceRelation` is a junction table with composite primary key
-- `BlogMedia` has CASCADE DELETE when parent `Blog` is deleted
-- `ProviderServiceRelation` has CASCADE DELETE for both foreign keys
-
+- **Users ↔ Roles:** `users.role_id` → `roles.role_id`
+- **Users ↔ Languages:** `users.language_id` → `languages.language_id`
+- **Reservations:** `reservations.user_id` and `reservations.provider_id` both point to `users.user_id`
+- **Services ↔ Users:** Many-to-many through `provider_services` (only provider/staff roles should be linked)
+- **Refresh Tokens:** Linked only to `users`
+- **Blogs:** Authored by users with provider roles

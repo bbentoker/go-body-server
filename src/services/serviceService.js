@@ -1,7 +1,7 @@
-const { Service, ServiceVariant, Provider } = require('../models');
+const { Service, ServiceVariant, User } = require('../models');
 
 const providerInclude = {
-  model: Provider,
+  model: User,
   as: 'providers',
   through: { attributes: [] },
 };

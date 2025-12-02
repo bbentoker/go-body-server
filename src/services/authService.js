@@ -87,12 +87,18 @@ function generateRandomToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-async function generateTokenPair(user, type = 'user') {
-  const userId = type === 'user' ? user.user_id : user.provider_id;
+async function generateTokenPair(user) {
+  const role = user.role || {};
+  const userId = user.user_id;
   const accessTokenPayload = {
     id: userId,
-    type,
     email: user.email,
+    role: {
+      id: role.role_id || user.role_id,
+      key: role.role_key,
+      name: role.role_name,
+      is_provider: Boolean(role.is_provider),
+    },
   };
   
   const accessToken = generateJWT(accessTokenPayload, JWT_ACCESS_SECRET, JWT_ACCESS_EXPIRY);
@@ -104,8 +110,7 @@ async function generateTokenPair(user, type = 'user') {
   
   await RefreshToken.create({
     token_hash: refreshTokenHash,
-    user_id: type === 'user' ? userId : null,
-    provider_id: type === 'provider' ? userId : null,
+    user_id: userId,
     expires_at: expiresAt,
   });
   
@@ -139,14 +144,16 @@ async function refreshAccessToken(refreshToken) {
     return null;
   }
   
-  const type = storedToken.user_id ? 'user' : 'provider';
-  const id = storedToken.user_id || storedToken.provider_id;
-  
-  const { Provider, User } = require('../models');
-  const Model = type === 'user' ? User : Provider;
-  const idField = type === 'user' ? 'user_id' : 'provider_id';
-  
-  const user = await Model.findByPk(id);
+  const { User, Role } = require('../models');
+  const user = await User.findByPk(storedToken.user_id, {
+    include: [
+      {
+        model: Role,
+        as: 'role',
+        attributes: ['role_id', 'role_key', 'role_name', 'is_provider'],
+      },
+    ],
+  });
   if (!user) {
     await storedToken.update({ revoked_at: new Date() });
     return null;
@@ -154,7 +161,7 @@ async function refreshAccessToken(refreshToken) {
   
   await storedToken.update({ revoked_at: new Date() });
   
-  return generateTokenPair(user, type);
+  return generateTokenPair(user);
 }
 
 async function revokeRefreshToken(refreshToken) {
@@ -176,11 +183,9 @@ async function revokeRefreshToken(refreshToken) {
   return true;
 }
 
-async function revokeAllUserTokens(userId, type = 'user') {
-  const where = type === 'user' 
-    ? { user_id: userId, revoked_at: null }
-    : { provider_id: userId, revoked_at: null };
-  
+async function revokeAllUserTokens(userId) {
+  const where = { user_id: userId, revoked_at: null };
+
   await RefreshToken.update(
     { revoked_at: new Date() },
     { where }

@@ -1,8 +1,8 @@
-const { ProviderServiceRelation, Provider, Service } = require('../models');
+const { ProviderServiceRelation, User, Service } = require('../models');
 
 const defaultInclude = [
   {
-    model: Provider,
+    model: User,
     as: 'provider',
   },
   {

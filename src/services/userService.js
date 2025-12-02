@@ -1,16 +1,27 @@
-const { User, Reservation, Language } = require('../models');
+const { User, Reservation, Language, Role } = require('../models');
 const encryptor = require('./encryptor');
+
+const roleAttributes = ['role_id', 'role_key', 'role_name', 'is_provider'];
+
+const languageInclude = {
+  model: Language,
+  as: 'language',
+  attributes: ['language_id', 'code', 'name', 'native_name'],
+};
+
+const roleInclude = {
+  model: Role,
+  as: 'role',
+  attributes: roleAttributes,
+};
 
 const defaultUserInclude = [
   {
     model: Reservation,
     as: 'reservations',
   },
-  {
-    model: Language,
-    as: 'language',
-    attributes: ['language_id', 'code', 'name', 'native_name'],
-  },
+  languageInclude,
+  roleInclude,
 ];
 
 function sanitizeUser(userInstance) {
@@ -24,6 +35,10 @@ function sanitizeUser(userInstance) {
 
   if (user.password_hash) {
     delete user.password_hash;
+  }
+
+  if (user.role?.is_provider && user.user_id && !user.provider_id) {
+    user.provider_id = user.user_id;
   }
 
   return user;
@@ -51,16 +66,7 @@ async function createUser(payload) {
   try {
     const userData = await prepareUserPayload(payload);
     const user = await User.create(userData);
-    // Reload with language relation
-    await user.reload({
-      include: [
-        {
-          model: Language,
-          as: 'language',
-          attributes: ['language_id', 'code', 'name', 'native_name'],
-        },
-      ],
-    });
+    await user.reload({ include: [languageInclude, roleInclude] });
     return sanitizeUser(user);
   } catch (error) {
     console.error('Error creating user', error);
@@ -71,7 +77,7 @@ async function createUser(payload) {
 async function getUserById(userId, options = {}) {
   try {
     const user = await User.findByPk(userId, {
-      include: options.includeReservations ? defaultUserInclude : undefined,
+      include: options.includeReservations ? defaultUserInclude : [languageInclude, roleInclude],
     });
 
     return sanitizeUser(user);
@@ -84,7 +90,7 @@ async function getUserById(userId, options = {}) {
 async function getUsers(options = {}) {
   try {
     const users = await User.findAll({
-      include: options.includeReservations ? defaultUserInclude : undefined,
+      include: options.includeReservations ? defaultUserInclude : [languageInclude, roleInclude],
       where: options.where,
       limit: options.limit,
       offset: options.offset,
@@ -108,15 +114,7 @@ async function updateUser(userId, updates) {
     const userData = await prepareUserPayload(updates);
 
     await user.update(userData);
-    await user.reload({
-      include: [
-        {
-          model: Language,
-          as: 'language',
-          attributes: ['language_id', 'code', 'name', 'native_name'],
-        },
-      ],
-    });
+    await user.reload({ include: [languageInclude, roleInclude] });
     return sanitizeUser(user);
   } catch (error) {
     console.error('Error in updateUser service:', error);
@@ -141,7 +139,7 @@ async function getUserByEmail(email, options = {}) {
   try {
     const user = await User.findOne({
       where: { email },
-      include: options.includeReservations ? defaultUserInclude : undefined,
+      include: options.includeReservations ? defaultUserInclude : [languageInclude, roleInclude],
     });
 
     return sanitizeUser(user);
@@ -151,24 +149,26 @@ async function getUserByEmail(email, options = {}) {
   }
 }
 
-async function authenticateUser(email, password) {
+async function authenticateUser(email, password, options = {}) {
   try {
-    const user = await User.findOne({
-      where: { email },
-      include: [
-        {
-          model: Language,
-          as: 'language',
-          attributes: ['language_id', 'code', 'name', 'native_name'],
-        },
-      ],
-    });
+    const roleWhere = Array.isArray(options.roleIds) && options.roleIds.length > 0
+      ? { role_id: options.roleIds }
+      : undefined;
 
+    const user = await User.findOne({
+      where: {
+        email,
+        ...roleWhere,
+      },
+      include: [languageInclude, roleInclude],
+    });
+    console.log('user', user.get({ plain: true }));
     if (!user || !user.password_hash) {
       return null;
     }
 
     const isValid = await encryptor.verifyPassword(password, user.password_hash);
+    console.log('isValid', isValid);
     if (!isValid) {
       return null;
     }

@@ -13,8 +13,8 @@ module.exports = (sequelize) => {
         type: DataTypes.BIGINT,
         allowNull: false,
         references: {
-          model: 'providers',
-          key: 'provider_id',
+          model: 'users',
+          key: 'user_id',
         },
       },
       title: {
