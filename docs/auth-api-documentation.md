@@ -22,6 +22,7 @@ Every successful auth response returns the authenticated `user` plus a token pai
     "is_active": true,
     "is_verified": false,
     "language_id": 4,
+    "country_id": null,
     "created_at": "2025-01-01T00:00:00.000Z",
     "role": {
       "role_id": 3,
@@ -83,12 +84,28 @@ Creates a new customer (`role_key=customer`).
 - Body:
   - `first_name` (required)
   - `last_name` (required)
-  - `email` (required, unique)
+  - `email` (required, unique, valid email format)
   - `password` (required, min 6 chars)
-  - `phone_number` (optional)
+  - `phone_number` (optional, unique if provided)
+  - `country_id` (optional)
   - `language_id` (optional, defaults to `4`)
 - Success: `201` with `user` + token pair.
-- Errors: `400` (validation), `409` (email exists), `500` (creation failed).
+- Errors: 
+  - `400` (validation: missing required fields, invalid email format, password too short)
+  - `409` (conflict: email already exists, phone number already exists)
+  - `500` (creation failed)
+
+Example request:
+```json
+{
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john.doe@example.com",
+  "password": "password123",
+  "phone_number": "+905365288656",
+  "country_id": 218
+}
+```
 
 ### POST `/auth/user/login`
 Customer login.

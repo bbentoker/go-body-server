@@ -69,6 +69,14 @@ module.exports = (sequelize) => {
           key: 'language_id',
         },
       },
+      country_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'countries',
+          key: 'id',
+        },
+      },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,

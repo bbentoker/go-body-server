@@ -94,7 +94,7 @@ const loginWorkerProvider = asyncHandler(async (req, res) => {
 });
 
 const registerUser = asyncHandler(async (req, res) => {
-  const { first_name, last_name, email, password, phone_number, language_id } = req.body;
+  const { first_name, last_name, email, password, phone_number, country_id, language_id } = req.body;
 
   await ensureRoleExists(CUSTOMER_ROLE_ID, {
     role_key: CUSTOMER_ROLE_KEY,
@@ -125,12 +125,20 @@ const registerUser = asyncHandler(async (req, res) => {
     return res.status(409).json({ message: 'User with this email already exists' });
   }
 
+  if (phone_number) {
+    const existingUserByPhone = await userService.getUserByPhoneNumber(phone_number);
+    if (existingUserByPhone) {
+      return res.status(409).json({ message: 'User with this phone number already exists' });
+    }
+  }
+
   const userData = {
     first_name,
     last_name,
     email,
     password,
     phone_number,
+    country_id,
     language_id: language_id || 4,
     role_id: CUSTOMER_ROLE_ID,
     is_verified: false,

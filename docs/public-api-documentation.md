@@ -5,17 +5,19 @@ All routes are prefixed with `/public`. Some endpoints are open, others require 
 ## Table of Contents
 - [Languages](#languages)
   - [List Active Languages](#1-list-active-languages)
+- [Countries](#countries)
+  - [List Countries](#2-list-countries)
 - [Blogs](#blogs)
-  - [List Published Blogs](#2-list-published-blogs)
+  - [List Published Blogs](#3-list-published-blogs)
 - [Services](#services)
-  - [List Services Without Price](#3-list-services-without-price)
+  - [List Services Without Price](#4-list-services-without-price)
 - [Reservations](#reservations)
-  - [Public Reservations By Date Range](#4-public-reservations-by-date-range)
-  - [My Reservations (auth)](#5-my-reservations-auth)
-  - [Create Reservation Request (auth)](#6-create-reservation-request-auth)
+  - [Public Reservations By Date Range](#5-public-reservations-by-date-range)
+  - [My Reservations (auth)](#6-my-reservations-auth)
+  - [Create Reservation Request (auth)](#7-create-reservation-request-auth)
 - [Profile](#profile)
-  - [Update Profile (auth)](#7-update-profile-auth)
-  - [Update Language Preference (auth)](#8-update-language-preference-auth)
+  - [Update Profile (auth)](#8-update-profile-auth)
+  - [Update Language Preference (auth)](#9-update-language-preference-auth)
 
 ---
 
@@ -28,9 +30,48 @@ All routes are prefixed with `/public`. Some endpoints are open, others require 
 
 ---
 
+## Countries
+
+### 2. List Countries
+**Endpoint:** `GET /public/countries`  
+**Auth:** Not required  
+**Description:** Returns all countries with sanitized fields, ordered alphabetically by name.
+
+**Response:**
+```json
+{
+  "count": 239,
+  "countries": [
+    {
+      "id": 1,
+      "iso_code_2": "AF",
+      "name": "Afghanistan",
+      "iso_code_3": "AFG",
+      "phone_code": 93
+    },
+    {
+      "id": 2,
+      "iso_code_2": "AL",
+      "name": "Albania",
+      "iso_code_3": "ALB",
+      "phone_code": 355
+    }
+  ]
+}
+```
+
+**Fields:**
+- `id` - Country ID (integer)
+- `iso_code_2` - ISO 3166-1 alpha-2 code (2-letter country code)
+- `name` - Country display name
+- `iso_code_3` - ISO 3166-1 alpha-3 code (3-letter country code, nullable)
+- `phone_code` - International dialing code (integer)
+
+---
+
 ## Blogs
 
-### 2. List Published Blogs
+### 3. List Published Blogs
 **Endpoint:** `GET /public/blogs`  
 **Auth:** Not required  
 **Query Params:** `includeMedia` (`true`|`1`) to include `media` array.  
@@ -40,7 +81,7 @@ All routes are prefixed with `/public`. Some endpoints are open, others require 
 
 ## Services
 
-### 3. List Services Without Price
+### 4. List Services Without Price
 **Endpoint:** `GET /public/services`  
 **Auth:** Not required  
 **Description:** Returns all services/products with the `price` field removed. Useful for public menus without showing pricing.
@@ -49,7 +90,7 @@ All routes are prefixed with `/public`. Some endpoints are open, others require 
 
 ## Reservations
 
-### 4. Public Reservations By Date Range
+### 5. Public Reservations By Date Range
 **Endpoint:** `GET /public/reservations`  
 **Auth:** Not required  
 **Query Params:**  
@@ -84,12 +125,12 @@ If dates are omitted, defaults to current week (Mon–Sun). Only `confirmed` and
 }
 ```
 
-### 5. My Reservations (auth)
+### 6. My Reservations (auth)
 **Endpoint:** `GET /public/my-reservations`  
 **Auth:** Required (user token)  
 **Description:** Returns all reservations for the authenticated user.
 
-### 6. Create Reservation Request (auth)
+### 7. Create Reservation Request (auth)
 **Endpoint:** `POST /public/reservation-request`  
 **Auth:** Required (user token)  
 **Description:** Create a new reservation request (pending). Provide required reservation fields in the body (see reservation API for details).
@@ -98,12 +139,12 @@ If dates are omitted, defaults to current week (Mon–Sun). Only `confirmed` and
 
 ## Profile
 
-### 7. Update Profile (auth)
+### 8. Update Profile (auth)
 **Endpoint:** `PUT /public/profile`  
 **Auth:** Required (user token)  
 **Description:** Update the authenticated user's profile fields.
 
-### 8. Update Language Preference (auth)
+### 9. Update Language Preference (auth)
 **Endpoint:** `PATCH /public/language`  
 **Auth:** Required (user token)  
 **Description:** Update the authenticated user's language preference.

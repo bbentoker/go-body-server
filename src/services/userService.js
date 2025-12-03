@@ -149,6 +149,24 @@ async function getUserByEmail(email, options = {}) {
   }
 }
 
+async function getUserByPhoneNumber(phoneNumber, options = {}) {
+  try {
+    if (!phoneNumber) {
+      return null;
+    }
+    
+    const user = await User.findOne({
+      where: { phone_number: phoneNumber },
+      include: options.includeReservations ? defaultUserInclude : [languageInclude, roleInclude],
+    });
+
+    return sanitizeUser(user);
+  } catch (error) {
+    console.error('Error in getUserByPhoneNumber service:', error);
+    throw error;
+  }
+}
+
 async function authenticateUser(email, password, options = {}) {
   try {
     const roleWhere = Array.isArray(options.roleIds) && options.roleIds.length > 0
@@ -208,6 +226,7 @@ module.exports = {
   updateUser,
   deleteUser,
   getUserByEmail,
+  getUserByPhoneNumber,
   authenticateUser,
   resetUserPasswordByEmail,
 };

@@ -19,6 +19,18 @@ INSERT INTO languages (language_id, code, name, native_name) VALUES
     (5, 'ar', 'Arabic', 'العربية'),
     (6, 'ru', 'Russian', 'Русский'),
     (7, 'id', 'Indonesian', 'Bahasa Indonesia');
+
+CREATE TABLE countries (
+    id SERIAL PRIMARY KEY,
+    iso_code_2 CHAR(2) NOT NULL,
+    official_name VARCHAR(80) NOT NULL,
+    name VARCHAR(80) NOT NULL,
+    iso_code_3 CHAR(3) DEFAULT NULL,
+    numeric_code SMALLINT DEFAULT NULL,
+    phone_code INTEGER NOT NULL
+);
+
+-- Note: Countries data should be inserted from src/utils/countries.sql
     
 CREATE TABLE roles (
     role_id SERIAL PRIMARY KEY,
@@ -42,7 +54,7 @@ ON CONFLICT (role_key) DO UPDATE SET
   is_provider = EXCLUDED.is_provider;
 
 -- Seed admin user (password hash is for 'ChangeMe123!' — rotate in production)
-INSERT INTO users (user_id, role_id, first_name, last_name, email, phone_number, password_hash, title, bio, is_active, is_verified, language_id)
+INSERT INTO users (user_id, role_id, first_name, last_name, email, phone_number, password_hash, title, bio, is_active, is_verified, language_id, country_id)
 VALUES (
   1,
   1, -- admin role
@@ -55,7 +67,8 @@ VALUES (
   'Seed admin user',
   true,
   true,
-  4
+  4,
+  NULL
 )
 ON CONFLICT (email) DO NOTHING;
 
@@ -76,6 +89,7 @@ CREATE TABLE users (
     is_active BOOLEAN NOT NULL DEFAULT true,
     is_verified BOOLEAN NOT NULL DEFAULT false,
     language_id INTEGER REFERENCES languages(language_id) DEFAULT 4, -- Assumes 4 is TR
+    country_id INTEGER REFERENCES countries(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE
 );
