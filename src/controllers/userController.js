@@ -20,6 +20,7 @@ function extractUserPayload(body, overrides = {}, options = {}) {
     'phone_number',
     'password',
     'role_id',
+    'country_id',
   ];
 
   const {
@@ -192,6 +193,34 @@ const updateOwnProfile = asyncHandler(async (req, res) => {
   }
 });
 
+const getOwnProfile = asyncHandler(async (req, res) => {
+  try {
+    // Ensure the user is authenticated
+    if (!req.user) {
+      return res.status(401).json({ 
+        message: 'Authentication required' 
+      });
+    }
+
+    const includeReservations = parseIncludeReservations(req);
+    const user = await userService.getUserById(req.user.id, {
+      includeReservations,
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.json(user);
+  } catch (error) {
+    console.error('Error in getOwnProfile controller:', error);
+    return res.status(500).json({
+      message: 'Failed to retrieve profile',
+      error: error.message,
+    });
+  }
+});
+
 const updateLanguagePreference = asyncHandler(async (req, res) => {
   try {
     // Ensure the user is authenticated and is not a provider/staff account
@@ -243,6 +272,7 @@ module.exports = {
   getUserById,
   updateUser,
   deleteUser,
+  getOwnProfile,
   updateOwnProfile,
   updateLanguagePreference,
 };

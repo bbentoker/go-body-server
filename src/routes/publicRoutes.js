@@ -9,6 +9,9 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Route for authenticated users to get their own profile
+router.get('/profile', authenticateToken, userController.getOwnProfile);
+
 // Route for authenticated users to update their own profile
 router.put('/profile', authenticateToken, userController.updateOwnProfile);
 

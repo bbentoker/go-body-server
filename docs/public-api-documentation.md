@@ -16,8 +16,9 @@ All routes are prefixed with `/public`. Some endpoints are open, others require 
   - [My Reservations (auth)](#6-my-reservations-auth)
   - [Create Reservation Request (auth)](#7-create-reservation-request-auth)
 - [Profile](#profile)
-  - [Update Profile (auth)](#8-update-profile-auth)
-  - [Update Language Preference (auth)](#9-update-language-preference-auth)
+  - [Get Profile (auth)](#8-get-profile-auth)
+  - [Update Profile (auth)](#9-update-profile-auth)
+  - [Update Language Preference (auth)](#10-update-language-preference-auth)
 
 ---
 
@@ -139,12 +140,93 @@ If dates are omitted, defaults to current week (Mon–Sun). Only `confirmed` and
 
 ## Profile
 
-### 8. Update Profile (auth)
+### 8. Get Profile (auth)
+**Endpoint:** `GET /public/profile`  
+**Auth:** Required (user token)  
+**Description:** Get the authenticated user's profile information.
+
+**Query Parameters:**
+- `includeReservations` (optional): Set to `true` or `1` to include user's reservations in the response
+
+**Response:**
+```json
+{
+  "user_id": 12,
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john.doe@example.com",
+  "phone_number": "+905365288656",
+  "title": null,
+  "bio": null,
+  "role_id": 3,
+  "is_active": true,
+  "is_verified": false,
+  "language_id": 4,
+  "country_id": 218,
+  "created_at": "2025-01-01T00:00:00.000Z",
+  "updated_at": "2025-01-01T00:00:00.000Z",
+  "role": {
+    "role_id": 3,
+    "role_key": "customer",
+    "role_name": "Customer",
+    "is_provider": false
+  },
+  "language": {
+    "language_id": 4,
+    "code": "tr",
+    "name": "Turkish",
+    "native_name": "Türkçe"
+  }
+}
+```
+
+**Errors:**
+- `401` - Authentication required
+- `404` - User not found
+- `500` - Server error
+
+### 9. Update Profile (auth)
 **Endpoint:** `PUT /public/profile`  
 **Auth:** Required (user token)  
 **Description:** Update the authenticated user's profile fields.
 
-### 9. Update Language Preference (auth)
+**Body Parameters:**
+- `first_name` (optional)
+- `last_name` (optional)
+- `email` (optional)
+- `phone_number` (optional)
+- `password` (optional)
+
+**Response:** Updated user object
+
+**Errors:**
+- `400` - No valid fields provided
+- `403` - Access denied (provider accounts cannot use this endpoint)
+- `404` - User not found
+- `500` - Server error
+
+### 10. Update Language Preference (auth)
 **Endpoint:** `PATCH /public/language`  
 **Auth:** Required (user token)  
 **Description:** Update the authenticated user's language preference.
+
+**Body Parameters:**
+- `language_id` (required) - Must be a valid number
+
+**Response:**
+```json
+{
+  "message": "Language preference updated successfully",
+  "user": {
+    "user_id": 12,
+    "language_id": 4,
+    ...
+  }
+}
+```
+
+**Errors:**
+- `400` - language_id is required or invalid
+- `403` - Access denied (provider accounts cannot use this endpoint)
+- `404` - User not found
+- `500` - Server error
