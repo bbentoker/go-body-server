@@ -13,6 +13,8 @@ const BlogModel = require('./blog');
 const BlogMediaModel = require('./blogMedia');
 const PackageModel = require('./package');
 const PackageItemModel = require('./packageItem');
+const EmailModel = require('./email');
+const EmailEventModel = require('./emailEvent');
 
 const User = UserModel(sequelize);
 const Role = RoleModel(sequelize);
@@ -27,6 +29,8 @@ const Blog = BlogModel(sequelize);
 const BlogMedia = BlogMediaModel(sequelize);
 const Package = PackageModel(sequelize);
 const PackageItem = PackageItemModel(sequelize);
+const Email = EmailModel(sequelize);
+const EmailEvent = EmailEventModel(sequelize);
 
 User.hasMany(Reservation, {
   foreignKey: 'user_id',
@@ -162,6 +166,26 @@ PackageItem.belongsTo(Service, {
   as: 'service',
 });
 
+// Email associations
+User.hasMany(Email, {
+  foreignKey: 'user_id',
+  as: 'emails',
+});
+Email.belongsTo(User, {
+  foreignKey: 'user_id',
+  as: 'user',
+});
+
+Email.hasMany(EmailEvent, {
+  foreignKey: 'email_id',
+  as: 'events',
+  onDelete: 'CASCADE',
+});
+EmailEvent.belongsTo(Email, {
+  foreignKey: 'email_id',
+  as: 'email',
+});
+
 module.exports = {
   sequelize,
   User,
@@ -177,5 +201,7 @@ module.exports = {
   BlogMedia,
   Package,
   PackageItem,
+  Email,
+  EmailEvent,
 };
 

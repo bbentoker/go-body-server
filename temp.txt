@@ -1,17 +1,9 @@
-read the db schema v2 and and the LogicDocumentation-Services,PackagesReservations.md
+Integrate an email servie to this project , service should be the only mail sending service used in this project so design it accordingly 
 
-Frontend needs the following routes for admins 
+Generate the necessary tables for storing sent mail infos and also mail events , see the doc below for the webhook doc of resend 
 
-get services  , this will use service controller to get the services 
+After generating the tables add the sql creates to the db schema v2 sql doc and give me the create statements for them seperatly 
 
-add services , use service controller 
-add service variant , use service controller 
-also other cruds too in the same way   
+https://resend.com/docs/dashboard/webhooks/event-types#sample-request-body
 
-add packages , could have multiple uses of same service or may have multiple different service ,create a new controller for this named packge contoller 
-
-
-try to add the routes to the admin routes but the controllers and services must be defined in the right name for each model and can be used in differnet places 
-to make sure data integrity when operating
-
-and generate detailed docs showing the payloads too 
+resend key is in the env as RESEND_KEY 

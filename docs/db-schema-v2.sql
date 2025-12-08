@@ -261,3 +261,77 @@ CREATE INDEX idx_reservations_provider ON reservations(provider_id);
 CREATE INDEX idx_reservations_dates ON reservations(start_time, end_time);
 CREATE INDEX idx_user_pkg_items_user_pkg ON user_package_items(user_package_id);
 CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
+
+-- ==========================================
+-- 9. EMAIL TRACKING (Resend Integration)
+-- ==========================================
+
+-- Create enum types for email status and event types
+CREATE TYPE email_status AS ENUM ('pending', 'sent', 'delivered', 'bounced', 'complained', 'failed');
+CREATE TYPE email_event_type AS ENUM (
+    'email.sent',
+    'email.delivered',
+    'email.delivery_delayed',
+    'email.complained',
+    'email.bounced',
+    'email.opened',
+    'email.clicked'
+);
+
+-- Table for storing sent email information
+CREATE TABLE emails (
+    email_id SERIAL PRIMARY KEY,
+    resend_id VARCHAR(255) UNIQUE,
+    user_id INTEGER REFERENCES users(user_id),
+    from_address VARCHAR(255) NOT NULL,
+    to_addresses JSONB NOT NULL,
+    cc_addresses JSONB,
+    bcc_addresses JSONB,
+    reply_to VARCHAR(255),
+    subject VARCHAR(998) NOT NULL,
+    html_content TEXT,
+    text_content TEXT,
+    template_name VARCHAR(100),
+    template_data JSONB,
+    tags JSONB,
+    status email_status NOT NULL DEFAULT 'pending',
+    error_message TEXT,
+    sent_at TIMESTAMP WITH TIME ZONE,
+    delivered_at TIMESTAMP WITH TIME ZONE,
+    opened_at TIMESTAMP WITH TIME ZONE,
+    clicked_at TIMESTAMP WITH TIME ZONE,
+    bounced_at TIMESTAMP WITH TIME ZONE,
+    complained_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Table for storing email events from Resend webhooks
+CREATE TABLE email_events (
+    event_id SERIAL PRIMARY KEY,
+    email_id INTEGER REFERENCES emails(email_id) ON DELETE CASCADE,
+    resend_email_id VARCHAR(255) NOT NULL,
+    event_type email_event_type NOT NULL,
+    webhook_id VARCHAR(255) UNIQUE,
+    recipient_email VARCHAR(255),
+    bounce_type VARCHAR(50),
+    bounce_classification VARCHAR(100),
+    click_url TEXT,
+    user_agent TEXT,
+    ip_address VARCHAR(45),
+    raw_payload JSONB,
+    occurred_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for email tables
+CREATE INDEX idx_emails_resend_id ON emails(resend_id);
+CREATE INDEX idx_emails_user_id ON emails(user_id);
+CREATE INDEX idx_emails_status ON emails(status);
+CREATE INDEX idx_emails_template ON emails(template_name);
+CREATE INDEX idx_emails_created ON emails(created_at);
+
+CREATE INDEX idx_email_events_email_id ON email_events(email_id);
+CREATE INDEX idx_email_events_resend_email_id ON email_events(resend_email_id);
+CREATE INDEX idx_email_events_type ON email_events(event_type);
+CREATE INDEX idx_email_events_occurred ON email_events(occurred_at);
