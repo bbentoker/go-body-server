@@ -54,7 +54,8 @@ const loginAdminProvider = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Email and password are required' });
   }
 
-  const provider = await userService.authenticateUser(email, password, { roleIds: [ADMIN_ROLE_ID] });
+  const normalizedEmail = email.toLowerCase().trim();
+  const provider = await userService.authenticateUser(normalizedEmail, password, { roleIds: [ADMIN_ROLE_ID] });
   if (!provider || !provider.role?.is_provider) {
     return res.status(401).json({ message: 'Invalid admin credentials' });
   }
@@ -80,7 +81,8 @@ const loginWorkerProvider = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Email and password are required' });
   }
 
-  const provider = await userService.authenticateUser(email, password, { roleIds: [WORKER_ROLE_ID] });
+  const normalizedEmail = email.toLowerCase().trim();
+  const provider = await userService.authenticateUser(normalizedEmail, password, { roleIds: [WORKER_ROLE_ID] });
   if (!provider || !provider.role?.is_provider) {
     return res.status(401).json({ message: 'Invalid worker credentials' });
   }
@@ -109,8 +111,10 @@ const registerUser = asyncHandler(async (req, res) => {
     });
   }
 
+  const normalizedEmail = email.toLowerCase().trim();
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  if (!emailRegex.test(normalizedEmail)) {
     return res.status(400).json({ message: 'Invalid email format' });
   }
 
@@ -120,7 +124,7 @@ const registerUser = asyncHandler(async (req, res) => {
     });
   }
 
-  const existingUser = await userService.getUserByEmail(email);
+  const existingUser = await userService.getUserByEmail(normalizedEmail);
   if (existingUser) {
     return res.status(409).json({ message: 'User with this email already exists' });
   }
@@ -135,7 +139,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const userData = {
     first_name,
     last_name,
-    email,
+    email: normalizedEmail,
     password,
     phone_number,
     country_id,
@@ -164,7 +168,8 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });
   }
-  const user = await userService.authenticateUser(email, password);
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await userService.authenticateUser(normalizedEmail, password);
   if (!user) {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
@@ -231,7 +236,8 @@ const resetUserPassword = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Password must be at least 6 characters long' });
   }
 
-  const user = await userService.resetUserPasswordByEmail(email, new_password);
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await userService.resetUserPasswordByEmail(normalizedEmail, new_password);
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
   }
@@ -250,7 +256,8 @@ const resetProviderPassword = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Password must be at least 6 characters long' });
   }
 
-  const provider = await providerService.resetProviderPasswordByEmail(email, new_password);
+  const normalizedEmail = email.toLowerCase().trim();
+  const provider = await providerService.resetProviderPasswordByEmail(normalizedEmail, new_password);
   if (!provider) {
     return res.status(404).json({ message: 'Provider not found' });
   }
