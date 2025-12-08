@@ -1,14 +1,17 @@
 const crypto = require('crypto');
-const { RefreshToken } = require('../models');
+const { RefreshToken, PasswordResetToken, User } = require('../models');
 
 const {
   JWT_ACCESS_SECRET = 'change_this_access_secret',
   JWT_REFRESH_SECRET = 'change_this_refresh_secret',
   JWT_ACCESS_EXPIRY = '60m',
   JWT_REFRESH_EXPIRY_DAYS = '7',
+  PASSWORD_RESET_EXPIRY_MINUTES = '60',
+  FRONTEND_URL = 'http://localhost:3000',
 } = process.env;
 
 const REFRESH_EXPIRY_MS = Number.parseInt(JWT_REFRESH_EXPIRY_DAYS, 10) * 24 * 60 * 60 * 1000;
+const PASSWORD_RESET_EXPIRY_MS = Number.parseInt(PASSWORD_RESET_EXPIRY_MINUTES, 10) * 60 * 1000;
 
 // Simple JWT implementation without external dependencies
 function base64UrlEncode(str) {
@@ -192,11 +195,121 @@ async function revokeAllUserTokens(userId) {
   );
 }
 
+/**
+ * Check if user has a non-expired, unused password reset request
+ * @param {number} userId - User ID
+ * @returns {Promise<boolean>} True if valid request exists
+ */
+async function hasValidPasswordResetRequest(userId) {
+  const { Op } = require('sequelize');
+  
+  const existingToken = await PasswordResetToken.findOne({
+    where: {
+      user_id: userId,
+      used_at: null,
+      expires_at: { [Op.gt]: new Date() },
+    },
+  });
+  
+  return !!existingToken;
+}
+
+/**
+ * Create a password reset token for a user
+ * @param {number} userId - User ID
+ * @returns {Promise<string>} The plain reset code (to be sent via email)
+ */
+async function createPasswordResetToken(userId) {
+  const resetCode = generateRandomToken();
+  const tokenHash = hashToken(resetCode);
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRY_MS);
+  
+  await PasswordResetToken.create({
+    token_hash: tokenHash,
+    user_id: userId,
+    expires_at: expiresAt,
+  });
+  
+  return resetCode;
+}
+
+/**
+ * Verify a password reset code and return the user if valid
+ * @param {string} resetCode - The reset code from the email
+ * @returns {Promise<Object|null>} User object if valid, null otherwise
+ */
+async function verifyPasswordResetCode(resetCode) {
+  const { Op } = require('sequelize');
+  const tokenHash = hashToken(resetCode);
+  
+  const resetToken = await PasswordResetToken.findOne({
+    where: {
+      token_hash: tokenHash,
+      used_at: null,
+      expires_at: { [Op.gt]: new Date() },
+    },
+  });
+  
+  if (!resetToken) {
+    return null;
+  }
+  
+  const user = await User.findByPk(resetToken.user_id);
+  if (!user) {
+    return null;
+  }
+  
+  return {
+    user,
+    tokenId: resetToken.token_id,
+  };
+}
+
+/**
+ * Mark a password reset token as used
+ * @param {number} tokenId - Token ID
+ */
+async function markPasswordResetTokenAsUsed(tokenId) {
+  await PasswordResetToken.update(
+    { used_at: new Date() },
+    { where: { token_id: tokenId } }
+  );
+}
+
+/**
+ * Get the frontend URL for password reset
+ * @param {string} resetCode - The reset code
+ * @returns {string} Full URL for password reset
+ */
+function getPasswordResetUrl(resetCode) {
+  return `${FRONTEND_URL}/auth/reset-password?code=${resetCode}`;
+}
+
+/**
+ * Get password reset expiry in human-readable format
+ * @returns {string} Expiry time string
+ */
+function getPasswordResetExpiryString() {
+  const minutes = Number.parseInt(PASSWORD_RESET_EXPIRY_MINUTES, 10);
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    return `${hours} hour${hours > 1 ? 's' : ''}`;
+  }
+  return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+}
+
 module.exports = {
   generateTokenPair,
   verifyAccessToken,
   refreshAccessToken,
   revokeRefreshToken,
   revokeAllUserTokens,
+  // Password reset functions
+  hasValidPasswordResetRequest,
+  createPasswordResetToken,
+  verifyPasswordResetCode,
+  markPasswordResetTokenAsUsed,
+  getPasswordResetUrl,
+  getPasswordResetExpiryString,
 };
 

@@ -15,6 +15,7 @@ const PackageModel = require('./package');
 const PackageItemModel = require('./packageItem');
 const EmailModel = require('./email');
 const EmailEventModel = require('./emailEvent');
+const PasswordResetTokenModel = require('./passwordResetToken');
 
 const User = UserModel(sequelize);
 const Role = RoleModel(sequelize);
@@ -31,6 +32,7 @@ const Package = PackageModel(sequelize);
 const PackageItem = PackageItemModel(sequelize);
 const Email = EmailModel(sequelize);
 const EmailEvent = EmailEventModel(sequelize);
+const PasswordResetToken = PasswordResetTokenModel(sequelize);
 
 User.hasMany(Reservation, {
   foreignKey: 'user_id',
@@ -186,6 +188,16 @@ EmailEvent.belongsTo(Email, {
   as: 'email',
 });
 
+// Password reset token associations
+User.hasMany(PasswordResetToken, {
+  foreignKey: 'user_id',
+  as: 'passwordResetTokens',
+});
+PasswordResetToken.belongsTo(User, {
+  foreignKey: 'user_id',
+  as: 'user',
+});
+
 module.exports = {
   sequelize,
   User,
@@ -203,5 +215,6 @@ module.exports = {
   PackageItem,
   Email,
   EmailEvent,
+  PasswordResetToken,
 };
 

@@ -2,6 +2,7 @@ const providerService = require('../services/providerService');
 const userService = require('../services/userService');
 const authService = require('../services/authService');
 const roleService = require('../services/providerRoleService');
+const emailService = require('../services/emailService');
 
 const ADMIN_ROLE_ID = Number.parseInt(process.env.ADMIN_ROLE_ID || '1', 10);
 const WORKER_ROLE_ID = Number.parseInt(process.env.WORKER_ROLE_ID || '2', 10);
@@ -265,6 +266,102 @@ const resetProviderPassword = asyncHandler(async (req, res) => {
   return res.json({ message: 'Password reset successfully' });
 });
 
+/**
+ * Request password reset - sends email with reset code
+ */
+const requestPasswordReset = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  // Check if user exists
+  const user = await userService.getUserByEmail(normalizedEmail);
+  
+  if (!user) {
+    // Return success even if user doesn't exist (security best practice)
+    return res.json({ 
+      message: 'If an account with that email exists, a password reset link has been sent.' 
+    });
+  }
+
+  // Check if there's already a valid reset request
+  const hasValidRequest = await authService.hasValidPasswordResetRequest(user.user_id);
+  console.log('hasValidRequest', hasValidRequest);
+  if (hasValidRequest) {
+    return res.status(429).json({ 
+      message: 'A password reset request is already pending. Please check your email or try again later.' 
+    });
+  }
+
+  // Create reset token
+  const resetCode = await authService.createPasswordResetToken(user.user_id);
+  const resetUrl = authService.getPasswordResetUrl(resetCode);
+  const expiresIn = authService.getPasswordResetExpiryString();
+
+  // Send email
+  try {
+    await emailService.sendTemplateEmail({
+      to: normalizedEmail,
+      subject: 'Password Reset Request - Go Body',
+      template: emailService.EMAIL_TEMPLATES.PASSWORD_RESET,
+      data: {
+        firstName: user.first_name,
+        resetUrl,
+        expiresIn,
+      },
+      userId: user.user_id,
+    });
+  } catch (emailError) {
+    console.error('Failed to send password reset email:', emailError);
+    return res.status(500).json({ message: 'Failed to send password reset email. Please try again later.' });
+  }
+
+  return res.json({ 
+    message: 'If an account with that email exists, a password reset link has been sent.' 
+  });
+});
+
+/**
+ * Confirm password reset - validates code and updates password
+ */
+const confirmPasswordReset = asyncHandler(async (req, res) => {
+  const { reset_code, new_password } = req.body;
+
+  if (!reset_code || !new_password) {
+    return res.status(400).json({ message: 'Reset code and new_password are required' });
+  }
+
+  if (String(new_password).length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+  }
+
+  // Verify the reset code
+  const result = await authService.verifyPasswordResetCode(reset_code);
+  if (!result) {
+    return res.status(400).json({ message: 'Invalid or expired reset code' });
+  }
+
+  const { user, tokenId } = result;
+
+  // Update the password
+  const updatedUser = await userService.resetUserPasswordByEmail(user.email, new_password);
+  if (!updatedUser) {
+    return res.status(500).json({ message: 'Failed to reset password' });
+  }
+
+  // Mark token as used
+  await authService.markPasswordResetTokenAsUsed(tokenId);
+
+  // Revoke all existing sessions for security
+  await authService.revokeAllUserTokens(user.user_id);
+
+  return res.json({ message: 'Password has been reset successfully. Please log in with your new password.' });
+});
+
 module.exports = {
   registerUser,
   loginUser,
@@ -273,4 +370,6 @@ module.exports = {
   logoutAll,
   resetUserPassword,
   resetProviderPassword,
+  requestPasswordReset,
+  confirmPasswordReset,
 };

@@ -19,5 +19,7 @@ services:
       MINIO_ADMIN_PASSWORD: Zhdf44XUz7mOGg8AIG4omv6nXmHhN7Mx
       MINIO_BUCKET_NAME: go-body
       RESEND_KEY: 're_QyV1f9iW_BpHXfFL4veQ88gmM9HxRhQeU'
+      GO_BODY_MAIL_ADDRESS: 'noreply@go-body.co'
+      FRONTEND_URL: 'https://go-body.co'
     ports:
       - "${PORT:-3000}:3000"

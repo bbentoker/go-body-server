@@ -229,6 +229,15 @@ CREATE TABLE refresh_tokens (
     revoked_at TIMESTAMP WITH TIME ZONE
 );
 
+CREATE TABLE password_reset_tokens (
+    token_id SERIAL PRIMARY KEY,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL REFERENCES users(user_id),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    used_at TIMESTAMP WITH TIME ZONE
+);
+
 CREATE TABLE blogs (
     blog_id SERIAL PRIMARY KEY,
     provider_id INTEGER NOT NULL REFERENCES users(user_id),
@@ -261,6 +270,9 @@ CREATE INDEX idx_reservations_provider ON reservations(provider_id);
 CREATE INDEX idx_reservations_dates ON reservations(start_time, end_time);
 CREATE INDEX idx_user_pkg_items_user_pkg ON user_package_items(user_package_id);
 CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
+CREATE INDEX idx_password_reset_tokens_hash ON password_reset_tokens(token_hash);
+CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens(user_id);
+CREATE INDEX idx_password_reset_tokens_expires ON password_reset_tokens(expires_at);
 
 -- ==========================================
 -- 9. EMAIL TRACKING (Resend Integration)
