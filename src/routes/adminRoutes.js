@@ -2,6 +2,7 @@ const express = require('express');
 const languageController = require('../controllers/languageController');
 const serviceController = require('../controllers/serviceController');
 const packageController = require('../controllers/packageController');
+const decisionTreeController = require('../controllers/decisionTreeController');
 const { authenticateToken, authenticateAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -33,6 +34,12 @@ router.get('/packages', packageController.listPackages);
 router.get('/packages/:packageId', packageController.getPackageById);
 router.put('/packages/:packageId', packageController.updatePackage);
 router.delete('/packages/:packageId', packageController.deletePackage);
+
+// Decision tree management
+router.post('/decision-trees', decisionTreeController.createDecisionTree);
+router.get('/decision-trees', decisionTreeController.listDecisionTrees);
+router.get('/decision-trees/:treeId', decisionTreeController.getDecisionTreeById);
+router.get('/decision-trees/:treeId/submissions', decisionTreeController.getTreeSubmissions);
 
 module.exports = router;
 

@@ -347,3 +347,37 @@ CREATE INDEX idx_email_events_email_id ON email_events(email_id);
 CREATE INDEX idx_email_events_resend_email_id ON email_events(resend_email_id);
 CREATE INDEX idx_email_events_type ON email_events(event_type);
 CREATE INDEX idx_email_events_occurred ON email_events(occurred_at);
+
+-- ==========================================
+-- 10. DECISION TREES
+-- ==========================================
+
+-- Stores decision tree versions with their full structure
+CREATE TABLE decision_trees (
+    tree_id SERIAL PRIMARY KEY,
+    version VARCHAR(20) NOT NULL UNIQUE, -- e.g., 'v1', 'v2', 'v3'
+    tree_data JSONB NOT NULL, -- Full tree structure: { startNodeId, nodes, edges }
+    created_by INTEGER REFERENCES users(user_id),
+    is_active BOOLEAN NOT NULL DEFAULT true, -- Marks the current active tree
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Stores user submissions/answers to decision trees
+CREATE TABLE decision_tree_submissions (
+    submission_id SERIAL PRIMARY KEY,
+    tree_id INTEGER NOT NULL REFERENCES decision_trees(tree_id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(user_id), -- Nullable for potential anonymous submissions
+    path JSONB NOT NULL, -- Array of steps: [{ stepIndex, nodeId, questionText, selectedAnswerId, selectedAnswerText }]
+    result JSONB NOT NULL, -- Final node: { nodeId, title, type }
+    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for decision tree tables
+CREATE INDEX idx_decision_trees_version ON decision_trees(version);
+CREATE INDEX idx_decision_trees_active ON decision_trees(is_active);
+CREATE INDEX idx_decision_trees_created ON decision_trees(created_at);
+
+CREATE INDEX idx_decision_tree_submissions_tree ON decision_tree_submissions(tree_id);
+CREATE INDEX idx_decision_tree_submissions_user ON decision_tree_submissions(user_id);
+CREATE INDEX idx_decision_tree_submissions_submitted ON decision_tree_submissions(submitted_at);

@@ -5,6 +5,7 @@ const languageController = require('../controllers/languageController');
 const countryController = require('../controllers/countryController');
 const blogController = require('../controllers/blogController');
 const serviceController = require('../controllers/serviceController');
+const decisionTreeController = require('../controllers/decisionTreeController');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -39,6 +40,11 @@ router.get('/blogs', blogController.listPublishedBlogs);
 
 // Route for getting available services/products without price (public)
 router.get('/services', serviceController.listServicesWithoutPrice);
+
+// Decision tree routes
+router.get('/decision-tree', decisionTreeController.getLatestDecisionTree);
+router.post('/decision-tree-submission', authenticateToken, decisionTreeController.createSubmission);
+router.get('/my-decision-tree-submissions', authenticateToken, decisionTreeController.getMySubmissions);
 
 module.exports = router;
 

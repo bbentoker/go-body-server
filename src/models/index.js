@@ -16,6 +16,8 @@ const PackageItemModel = require('./packageItem');
 const EmailModel = require('./email');
 const EmailEventModel = require('./emailEvent');
 const PasswordResetTokenModel = require('./passwordResetToken');
+const DecisionTreeModel = require('./decisionTree');
+const DecisionTreeSubmissionModel = require('./decisionTreeSubmission');
 
 const User = UserModel(sequelize);
 const Role = RoleModel(sequelize);
@@ -33,6 +35,8 @@ const PackageItem = PackageItemModel(sequelize);
 const Email = EmailModel(sequelize);
 const EmailEvent = EmailEventModel(sequelize);
 const PasswordResetToken = PasswordResetTokenModel(sequelize);
+const DecisionTree = DecisionTreeModel(sequelize);
+const DecisionTreeSubmission = DecisionTreeSubmissionModel(sequelize);
 
 User.hasMany(Reservation, {
   foreignKey: 'user_id',
@@ -198,6 +202,35 @@ PasswordResetToken.belongsTo(User, {
   as: 'user',
 });
 
+// Decision tree associations
+User.hasMany(DecisionTree, {
+  foreignKey: 'created_by',
+  as: 'decisionTrees',
+});
+DecisionTree.belongsTo(User, {
+  foreignKey: 'created_by',
+  as: 'creator',
+});
+
+DecisionTree.hasMany(DecisionTreeSubmission, {
+  foreignKey: 'tree_id',
+  as: 'submissions',
+  onDelete: 'CASCADE',
+});
+DecisionTreeSubmission.belongsTo(DecisionTree, {
+  foreignKey: 'tree_id',
+  as: 'tree',
+});
+
+User.hasMany(DecisionTreeSubmission, {
+  foreignKey: 'user_id',
+  as: 'decisionTreeSubmissions',
+});
+DecisionTreeSubmission.belongsTo(User, {
+  foreignKey: 'user_id',
+  as: 'user',
+});
+
 module.exports = {
   sequelize,
   User,
@@ -216,5 +249,7 @@ module.exports = {
   Email,
   EmailEvent,
   PasswordResetToken,
+  DecisionTree,
+  DecisionTreeSubmission,
 };
 
