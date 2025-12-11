@@ -50,8 +50,6 @@ const getAllLanguages = asyncHandler(async (req, res) => {
  */
 const updateProviderLanguagePreference = asyncHandler(async (req, res) => {
   try {
-    console.log('updateProviderLanguagePreference', req.body);
-    console.log('updateProviderLanguagePreference', req.user);
     const { language_id } = req.body;
     const providerId = req.user.id;
 
