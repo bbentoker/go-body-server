@@ -5,7 +5,7 @@ module.exports = (sequelize) => {
     'User',
     {
       user_id: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
       },
@@ -38,7 +38,7 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(255),
       },
       role_id: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.INTEGER,
         references: {
           model: 'roles',
           key: 'role_id',
@@ -61,7 +61,7 @@ module.exports = (sequelize) => {
         defaultValue: false,
       },
       language_id: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 4, // Turkish (tr) as default
         references: {

@@ -5,7 +5,7 @@ module.exports = (sequelize) => {
     'RefreshToken',
     {
       token_id: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
       },
@@ -15,7 +15,7 @@ module.exports = (sequelize) => {
         unique: true,
       },
       user_id: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.INTEGER,
         references: {
           model: 'users',
           key: 'user_id',

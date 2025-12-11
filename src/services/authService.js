@@ -5,13 +5,15 @@ const {
   JWT_ACCESS_SECRET = 'change_this_access_secret',
   JWT_REFRESH_SECRET = 'change_this_refresh_secret',
   JWT_ACCESS_EXPIRY = '60m',
-  JWT_REFRESH_EXPIRY_DAYS = '7',
-  PASSWORD_RESET_EXPIRY_MINUTES = '60',
   FRONTEND_URL = 'http://localhost:3000',
 } = process.env;
 
-const REFRESH_EXPIRY_MS = Number.parseInt(JWT_REFRESH_EXPIRY_DAYS, 10) * 24 * 60 * 60 * 1000;
-const PASSWORD_RESET_EXPIRY_MS = Number.parseInt(PASSWORD_RESET_EXPIRY_MINUTES, 10) * 60 * 1000;
+// Handle empty string environment variables with proper fallbacks
+const JWT_REFRESH_EXPIRY_DAYS = Number.parseInt(process.env.JWT_REFRESH_EXPIRY_DAYS, 10) || 7;
+const PASSWORD_RESET_EXPIRY_MINUTES = Number.parseInt(process.env.PASSWORD_RESET_EXPIRY_MINUTES, 10) || 60;
+
+const REFRESH_EXPIRY_MS = JWT_REFRESH_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+const PASSWORD_RESET_EXPIRY_MS = PASSWORD_RESET_EXPIRY_MINUTES * 60 * 1000;
 
 // Simple JWT implementation without external dependencies
 function base64UrlEncode(str) {
@@ -111,11 +113,17 @@ async function generateTokenPair(user) {
   
   const expiresAt = new Date(Date.now() + REFRESH_EXPIRY_MS);
   
-  await RefreshToken.create({
-    token_hash: refreshTokenHash,
-    user_id: userId,
-    expires_at: expiresAt,
-  });
+  try {
+    await RefreshToken.create({
+      token_hash: refreshTokenHash,
+      user_id: userId,
+      expires_at: expiresAt,
+    });
+  } catch (error) {
+    console.error('RefreshToken.create error:', error.message);
+    console.error('Error details:', error.original || error);
+    throw error;
+  }
   
   return {
     accessToken,

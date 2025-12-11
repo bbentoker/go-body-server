@@ -5,7 +5,7 @@ module.exports = (sequelize) => {
     'PasswordResetToken',
     {
       token_id: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
       },
@@ -15,7 +15,7 @@ module.exports = (sequelize) => {
         unique: true,
       },
       user_id: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.INTEGER,
         allowNull: false,
         references: {
           model: 'users',
