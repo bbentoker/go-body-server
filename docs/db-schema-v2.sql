@@ -98,9 +98,19 @@ CREATE TABLE users (
 -- 3. SERVICES & VARIANTS
 -- ==========================================
 
+CREATE TABLE service_categories (
+    service_category_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE
+);
+
 -- The base definition of a service (e.g., "Massage")
 CREATE TABLE services (
     service_id SERIAL PRIMARY KEY,
+    service_category_id INTEGER REFERENCES service_categories(service_category_id) ON DELETE SET NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     is_active BOOLEAN NOT NULL DEFAULT true,

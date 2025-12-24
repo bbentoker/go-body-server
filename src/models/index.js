@@ -3,6 +3,7 @@ const sequelize = require('../config/database');
 const UserModel = require('./user');
 const RoleModel = require('./role');
 const ServiceModel = require('./service');
+const ServiceCategoryModel = require('./serviceCategory');
 const ServiceVariantModel = require('./serviceVariant');
 const ProviderServiceRelationModel = require('./providerServiceRelation');
 const ReservationModel = require('./reservation');
@@ -22,6 +23,7 @@ const DecisionTreeSubmissionModel = require('./decisionTreeSubmission');
 const User = UserModel(sequelize);
 const Role = RoleModel(sequelize);
 const Service = ServiceModel(sequelize);
+const ServiceCategory = ServiceCategoryModel(sequelize);
 const ServiceVariant = ServiceVariantModel(sequelize);
 const ProviderServiceRelation = ProviderServiceRelationModel(sequelize);
 const Reservation = ReservationModel(sequelize);
@@ -64,6 +66,16 @@ Service.hasMany(ServiceVariant, {
 ServiceVariant.belongsTo(Service, {
   foreignKey: 'service_id',
   as: 'service',
+});
+
+ServiceCategory.hasMany(Service, {
+  foreignKey: 'service_category_id',
+  as: 'services',
+  onDelete: 'SET NULL',
+});
+Service.belongsTo(ServiceCategory, {
+  foreignKey: 'service_category_id',
+  as: 'category',
 });
 
 ServiceVariant.hasMany(Reservation, {
@@ -236,6 +248,7 @@ module.exports = {
   User,
   Role,
   Service,
+  ServiceCategory,
   ServiceVariant,
   ProviderServiceRelation,
   Reservation,
@@ -252,4 +265,3 @@ module.exports = {
   DecisionTree,
   DecisionTreeSubmission,
 };
-

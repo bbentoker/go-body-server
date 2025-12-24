@@ -1,4 +1,5 @@
 const serviceService = require('../services/serviceService');
+const serviceCategoryService = require('../services/serviceCategoryService');
 const serviceVariantService = require('../services/serviceVariantService');
 
 function asyncHandler(handler) {
@@ -17,11 +18,13 @@ function extractServicePayload(body, overrides = {}, options = {}) {
     'description',
     'is_active',
     'notes',
+    'service_category_id',
   ];
 
   const {
     requiredFields = [],
     includeNull = true,
+    nullableFields = [],
   } = options;
 
   const raw = { ...body, ...overrides };
@@ -52,6 +55,7 @@ const createService = asyncHandler(async (req, res) => {
     {
       requiredFields: ['name'],
       includeNull: false,
+      nullableFields: ['service_category_id'],
     }
   );
 
@@ -61,6 +65,16 @@ const createService = asyncHandler(async (req, res) => {
     });
   }
 
+  if (
+    Object.prototype.hasOwnProperty.call(payload, 'service_category_id') &&
+    payload.service_category_id !== null
+  ) {
+    const category = await serviceCategoryService.getCategoryById(payload.service_category_id);
+    if (!category) {
+      return res.status(404).json({ message: 'Service category not found' });
+    }
+  }
+
   const service = await serviceService.createService(payload);
   return res.status(201).json(service);
 });
@@ -68,16 +82,23 @@ const createService = asyncHandler(async (req, res) => {
 const listServices = asyncHandler(async (req, res) => {
   const includeProviders = parseBooleanFlag(req.query.includeProviders);
   const includeVariants = parseBooleanFlag(req.query.includeVariants);
-  const services = await serviceService.getServices({ includeProviders, includeVariants });
+  const includeCategory = parseBooleanFlag(req.query.includeCategory);
+  const services = await serviceService.getServices({
+    includeProviders,
+    includeVariants,
+    includeCategory,
+  });
   return res.json(services);
 });
 
 const getServiceById = asyncHandler(async (req, res) => {
   const includeProviders = parseBooleanFlag(req.query.includeProviders);
   const includeVariants = parseBooleanFlag(req.query.includeVariants);
+  const includeCategory = parseBooleanFlag(req.query.includeCategory);
   const service = await serviceService.getServiceById(req.params.serviceId, {
     includeProviders,
     includeVariants,
+    includeCategory,
   });
 
   if (!service) {
@@ -88,10 +109,27 @@ const getServiceById = asyncHandler(async (req, res) => {
 });
 
 const updateService = asyncHandler(async (req, res) => {
-  const { payload } = extractServicePayload(req.body, {}, { includeNull: false });
+  const { payload } = extractServicePayload(
+    req.body,
+    {},
+    {
+      includeNull: false,
+      nullableFields: ['service_category_id'],
+    }
+  );
 
   if (Object.keys(payload).length === 0) {
     return res.status(400).json({ message: 'No valid fields to update' });
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(payload, 'service_category_id') &&
+    payload.service_category_id !== null
+  ) {
+    const category = await serviceCategoryService.getCategoryById(payload.service_category_id);
+    if (!category) {
+      return res.status(404).json({ message: 'Service category not found' });
+    }
   }
 
   const service = await serviceService.updateService(req.params.serviceId, payload);
@@ -114,9 +152,11 @@ const deleteService = asyncHandler(async (req, res) => {
 });
 
 const listServicesWithoutPrice = asyncHandler(async (req, res) => {
+  const includeCategory = parseBooleanFlag(req.query.includeCategory);
   const services = await serviceService.getServices({
     includeProviders: false,
     includeVariants: true,
+    includeCategory,
   });
 
   const sanitized = services.map((service) => {
@@ -141,7 +181,8 @@ function extractVariantPayload(body, overrides = {}, options = {}) {
   fields.forEach((field) => {
     if (Object.prototype.hasOwnProperty.call(raw, field)) {
       const value = raw[field];
-      if (typeof value !== 'undefined' && (includeNull || value !== null)) {
+      const allowNull = includeNull || nullableFields.includes(field);
+      if (typeof value !== 'undefined' && (allowNull || value !== null)) {
         payload[field] = value;
       }
     }

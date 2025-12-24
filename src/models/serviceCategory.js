@@ -1,10 +1,10 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  const Service = sequelize.define(
-    'Service',
+  const ServiceCategory = sequelize.define(
+    'ServiceCategory',
     {
-      service_id: {
+      service_category_id: {
         type: DataTypes.BIGINT,
         primaryKey: true,
         autoIncrement: true,
@@ -21,13 +21,6 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: true,
       },
-      notes: {
-        type: DataTypes.TEXT,
-      },
-      service_category_id: {
-        type: DataTypes.BIGINT,
-        allowNull: true,
-      },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -38,13 +31,12 @@ module.exports = (sequelize) => {
       },
     },
     {
-      tableName: 'services',
+      tableName: 'service_categories',
       timestamps: true,
       createdAt: 'created_at',
       updatedAt: 'updated_at',
     }
   );
 
-  return Service;
+  return ServiceCategory;
 };
-

@@ -1,6 +1,6 @@
 # Services API Documentation
 
-This document provides detailed information about all service management endpoints in the Go Body server application.
+This document provides detailed information about service management endpoints in the Go Body server application.
 
 ## Base URL
 All service routes are prefixed with `/services`
@@ -16,6 +16,12 @@ Example: `GET BASE_URL/services`
   - [Get Service by ID](#3-get-service-by-id)
   - [Update Service](#4-update-service)
   - [Delete Service](#5-delete-service)
+- [Service Category Management Routes](#service-category-management-routes)
+  - [Create Service Category](#6-create-service-category)
+  - [List Service Categories](#7-list-service-categories)
+  - [Get Service Category by ID](#8-get-service-category-by-id)
+  - [Update Service Category](#9-update-service-category)
+  - [Delete Service Category](#10-delete-service-category)
 
 ---
 
@@ -31,34 +37,33 @@ Create a new service offering in the system.
 ```json
 {
   "name": "Swedish Massage",
-  "description": "A relaxing full-body massage using gentle pressure and long, flowing strokes to promote relaxation and ease muscle tension.",
-  "duration_minutes": 60,
-  "price": 85.00,
+  "description": "A relaxing full-body massage using gentle pressure and long, flowing strokes.",
+  "notes": "Do not assign to trainees.",
   "is_active": true,
-  "requires_provider": true
+  "service_category_id": 3
 }
 ```
 
 **Required Fields:**
 - `name` (string): Service name (max 255 characters)
-- `duration_minutes` (integer): Duration in minutes (minimum: 1)
-- `price` (decimal): Service price (minimum: 0, format: 10.2)
 
 **Optional Fields:**
 - `description` (text): Detailed description of the service
+- `notes` (text): Internal notes
 - `is_active` (boolean): Whether the service is currently active (default: true)
-- `requires_provider` (boolean): Whether the service requires a provider (default: true)
+- `service_category_id` (integer | null): Category assignment (nullable)
 
 **Success Response (201 Created):**
 ```json
 {
   "service_id": 1,
   "name": "Swedish Massage",
-  "description": "A relaxing full-body massage using gentle pressure and long, flowing strokes to promote relaxation and ease muscle tension.",
-  "duration_minutes": 60,
-  "price": "85.00",
+  "description": "A relaxing full-body massage using gentle pressure and long, flowing strokes.",
+  "notes": "Do not assign to trainees.",
   "is_active": true,
-  "requires_provider": true
+  "service_category_id": 3,
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "updated_at": "2024-01-01T00:00:00.000Z"
 }
 ```
 
@@ -67,7 +72,14 @@ Create a new service offering in the system.
 - **400 Bad Request:**
 ```json
 {
-  "message": "Missing required fields: name, duration_minutes, price"
+  "message": "Missing required fields: name"
+}
+```
+
+- **404 Not Found:**
+```json
+{
+  "message": "Service category not found"
 }
 ```
 
@@ -78,18 +90,14 @@ curl -X POST http://localhost:3000/services \
   -d '{
     "name": "Swedish Massage",
     "description": "A relaxing full-body massage",
-    "duration_minutes": 60,
-    "price": 85.00,
     "is_active": true,
-    "requires_provider": true
+    "service_category_id": 3
   }'
 ```
 
 **Notes:**
 - The `service_id` is auto-generated
-- Price must be a positive decimal value
-- Duration must be at least 1 minute
-- If `is_active` is false, the service won't be visible for bookings
+- `service_category_id` can be omitted or set to `null`
 
 ---
 
@@ -103,57 +111,61 @@ Retrieve a list of all services in the system.
 - `includeProviders` (optional, boolean): Include provider relationships in response
   - Accepted values: `true`, `1`
   - Default: `false`
+- `includeVariants` (optional, boolean): Include service variants in response
+  - Accepted values: `true`, `1`
+  - Default: `false`
+- `includeCategory` (optional, boolean): Include category details in response
+  - Accepted values: `true`, `1`
+  - Default: `false`
 
 **Success Response (200 OK):**
 
-Without providers:
+Basic response:
 ```json
 [
   {
     "service_id": 1,
     "name": "Swedish Massage",
     "description": "A relaxing full-body massage",
-    "duration_minutes": 60,
-    "price": "85.00",
+    "notes": null,
     "is_active": true,
-    "requires_provider": true
-  },
-  {
-    "service_id": 2,
-    "name": "Quick Haircut",
-    "description": "Professional haircut service",
-    "duration_minutes": 30,
-    "price": "25.00",
-    "is_active": true,
-    "requires_provider": true
+    "service_category_id": 3,
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "updated_at": "2024-01-01T00:00:00.000Z"
   }
 ]
 ```
 
-With providers (`?includeProviders=true`):
+With category and variants (`?includeCategory=true&includeVariants=true`):
 ```json
 [
   {
     "service_id": 1,
     "name": "Swedish Massage",
     "description": "A relaxing full-body massage",
-    "duration_minutes": 60,
-    "price": "85.00",
+    "notes": null,
     "is_active": true,
-    "requires_provider": true,
-    "providers": [
+    "service_category_id": 3,
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "updated_at": "2024-01-01T00:00:00.000Z",
+    "category": {
+      "service_category_id": 3,
+      "name": "Massage",
+      "description": "Bodywork services",
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "updated_at": "2024-01-01T00:00:00.000Z"
+    },
+    "variants": [
       {
-        "provider_id": 1,
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john@example.com",
-        "phone_number": "555-0123",
-        "title": "Massage Therapist",
-        "bio": "Certified massage therapist with 10 years experience",
-        "role_id": 2,
+        "variant_id": 10,
+        "service_id": 1,
+        "name": "Swedish Massage",
+        "duration_minutes": 60,
+        "price": "85.00",
         "is_active": true,
-        "is_verified": true,
-        "created_at": "2024-01-01T00:00:00.000Z"
+        "created_at": "2024-01-01T00:00:00.000Z",
+        "updated_at": "2024-01-01T00:00:00.000Z"
       }
     ]
   }
@@ -165,13 +177,12 @@ With providers (`?includeProviders=true`):
 # Basic request
 curl http://localhost:3000/services
 
-# With providers
-curl http://localhost:3000/services?includeProviders=true
+# With category and variants
+curl http://localhost:3000/services?includeCategory=true&includeVariants=true
 ```
 
 **Notes:**
 - Returns an empty array `[]` if no services exist
-- Include providers to see which providers can perform each service
 - Results include both active and inactive services
 
 ---
@@ -189,47 +200,24 @@ Retrieve details of a specific service.
 - `includeProviders` (optional, boolean): Include provider relationships in response
   - Accepted values: `true`, `1`
   - Default: `false`
+- `includeVariants` (optional, boolean): Include service variants in response
+  - Accepted values: `true`, `1`
+  - Default: `false`
+- `includeCategory` (optional, boolean): Include category details in response
+  - Accepted values: `true`, `1`
+  - Default: `false`
 
 **Success Response (200 OK):**
-
-Without providers:
 ```json
 {
   "service_id": 1,
   "name": "Swedish Massage",
-  "description": "A relaxing full-body massage using gentle pressure and long, flowing strokes to promote relaxation and ease muscle tension.",
-  "duration_minutes": 60,
-  "price": "85.00",
+  "description": "A relaxing full-body massage using gentle pressure and long, flowing strokes.",
+  "notes": "Do not assign to trainees.",
   "is_active": true,
-  "requires_provider": true
-}
-```
-
-With providers (`?includeProviders=true`):
-```json
-{
-  "service_id": 1,
-  "name": "Swedish Massage",
-  "description": "A relaxing full-body massage",
-  "duration_minutes": 60,
-  "price": "85.00",
-  "is_active": true,
-  "requires_provider": true,
-  "providers": [
-    {
-      "provider_id": 1,
-      "first_name": "John",
-      "last_name": "Doe",
-      "email": "john@example.com",
-      "phone_number": "555-0123",
-      "title": "Massage Therapist",
-      "bio": "Certified massage therapist",
-      "role_id": 2,
-      "is_active": true,
-      "is_verified": true,
-      "created_at": "2024-01-01T00:00:00.000Z"
-    }
-  ]
+  "service_category_id": 3,
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "updated_at": "2024-01-01T00:00:00.000Z"
 }
 ```
 
@@ -247,13 +235,9 @@ With providers (`?includeProviders=true`):
 # Basic request
 curl http://localhost:3000/services/1
 
-# With providers
-curl http://localhost:3000/services/1?includeProviders=true
+# With category
+curl http://localhost:3000/services/1?includeCategory=true
 ```
-
-**Notes:**
-- The `serviceId` must be a valid integer
-- Use `includeProviders=true` to see available providers for this service
 
 ---
 
@@ -273,20 +257,18 @@ All fields are optional. Only include the fields you want to update.
 {
   "name": "Deep Tissue Massage",
   "description": "Updated description",
-  "duration_minutes": 90,
-  "price": 120.00,
+  "notes": "Priority for senior therapists.",
   "is_active": false,
-  "requires_provider": true
+  "service_category_id": null
 }
 ```
 
 **Available Fields:**
 - `name` (string): Service name (max 255 characters)
 - `description` (text): Service description
-- `duration_minutes` (integer): Duration in minutes (minimum: 1)
-- `price` (decimal): Service price (minimum: 0)
+- `notes` (text): Internal notes
 - `is_active` (boolean): Active status
-- `requires_provider` (boolean): Provider requirement
+- `service_category_id` (integer | null): Category assignment (nullable)
 
 **Success Response (200 OK):**
 ```json
@@ -294,10 +276,11 @@ All fields are optional. Only include the fields you want to update.
   "service_id": 1,
   "name": "Deep Tissue Massage",
   "description": "Updated description",
-  "duration_minutes": 90,
-  "price": "120.00",
+  "notes": "Priority for senior therapists.",
   "is_active": false,
-  "requires_provider": true
+  "service_category_id": null,
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "updated_at": "2024-01-02T00:00:00.000Z"
 }
 ```
 
@@ -317,27 +300,25 @@ All fields are optional. Only include the fields you want to update.
 }
 ```
 
-**Example Request (curl):**
-```bash
-# Update price and duration
-curl -X PUT http://localhost:3000/services/1 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "price": 95.00,
-    "duration_minutes": 75
-  }'
-
-# Deactivate a service
-curl -X PUT http://localhost:3000/services/1 \
-  -H "Content-Type: application/json" \
-  -d '{"is_active": false}'
+- **404 Not Found:**
+```json
+{
+  "message": "Service category not found"
+}
 ```
 
-**Notes:**
-- Only send the fields you want to update
-- Cannot update `service_id`
-- Validation rules apply (e.g., price >= 0, duration >= 1)
-- Returns the updated service object
+**Example Request (curl):**
+```bash
+# Assign a category
+curl -X PUT http://localhost:3000/services/1 \
+  -H "Content-Type: application/json" \
+  -d '{"service_category_id": 2}'
+
+# Remove a category
+curl -X PUT http://localhost:3000/services/1 \
+  -H "Content-Type: application/json" \
+  -d '{"service_category_id": null}'
+```
 
 ---
 
@@ -368,11 +349,172 @@ Permanently delete a service from the system.
 curl -X DELETE http://localhost:3000/services/1
 ```
 
-**Notes:**
-- This is a permanent deletion
-- Consider using the update endpoint to set `is_active: false` instead for soft deletion
-- Deleting a service may affect existing reservations that reference this service
-- No response body is returned on successful deletion
+---
+
+## Service Category Management Routes
+
+### 6. Create Service Category
+
+Create a new service category.
+
+**Endpoint:** `POST /service-categories`
+
+**Request Body:**
+```json
+{
+  "name": "Massage",
+  "description": "Bodywork services",
+  "is_active": true
+}
+```
+
+**Required Fields:**
+- `name` (string): Category name (max 255 characters)
+
+**Optional Fields:**
+- `description` (text): Category description
+- `is_active` (boolean): Whether the category is active (default: true)
+
+**Success Response (201 Created):**
+```json
+{
+  "service_category_id": 3,
+  "name": "Massage",
+  "description": "Bodywork services",
+  "is_active": true,
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "updated_at": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Error Responses:**
+
+- **400 Bad Request:**
+```json
+{
+  "message": "Missing required fields: name"
+}
+```
+
+---
+
+### 7. List Service Categories
+
+Retrieve a list of all service categories.
+
+**Endpoint:** `GET /service-categories`
+
+**Success Response (200 OK):**
+```json
+[
+  {
+    "service_category_id": 3,
+    "name": "Massage",
+    "description": "Bodywork services",
+    "is_active": true,
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "updated_at": "2024-01-01T00:00:00.000Z"
+  }
+]
+```
+
+---
+
+### 8. Get Service Category by ID
+
+Retrieve details of a specific service category.
+
+**Endpoint:** `GET /service-categories/:categoryId`
+
+**Path Parameters:**
+- `categoryId` (integer, required): The unique identifier of the category
+
+**Success Response (200 OK):**
+```json
+{
+  "service_category_id": 3,
+  "name": "Massage",
+  "description": "Bodywork services",
+  "is_active": true,
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "updated_at": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Error Responses:**
+
+- **404 Not Found:**
+```json
+{
+  "message": "Service category not found"
+}
+```
+
+---
+
+### 9. Update Service Category
+
+Update an existing service category.
+
+**Endpoint:** `PUT /service-categories/:categoryId`
+
+**Request Body:**
+```json
+{
+  "name": "Massage",
+  "description": "Updated description",
+  "is_active": false
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "service_category_id": 3,
+  "name": "Massage",
+  "description": "Updated description",
+  "is_active": false,
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "updated_at": "2024-01-02T00:00:00.000Z"
+}
+```
+
+**Error Responses:**
+
+- **400 Bad Request:**
+```json
+{
+  "message": "No valid fields to update"
+}
+```
+
+- **404 Not Found:**
+```json
+{
+  "message": "Service category not found"
+}
+```
+
+---
+
+### 10. Delete Service Category
+
+Permanently delete a service category.
+
+**Endpoint:** `DELETE /service-categories/:categoryId`
+
+**Success Response (204 No Content):**
+- Empty response body
+- HTTP status code: 204
+
+**Error Responses:**
+
+- **404 Not Found:**
+```json
+{
+  "message": "Service category not found"
+}
+```
 
 ---
 
@@ -406,128 +548,72 @@ This typically indicates a database error or server configuration issue.
   - Optional
   - Can be null
 
-- **duration_minutes:**
-  - Type: Integer
-  - Minimum value: 1
-  - Required for creation
-  - Cannot be null
-
-- **price:**
-  - Type: Decimal(10, 2)
-  - Minimum value: 0
-  - Required for creation
-  - Cannot be null
-  - Stored with 2 decimal places
+- **notes:**
+  - Type: Text
+  - Optional
+  - Can be null
 
 - **is_active:**
   - Type: Boolean
   - Default: true
   - Controls visibility for bookings
 
-- **requires_provider:**
+- **service_category_id:**
+  - Type: Integer
+  - Optional
+  - Can be null
+  - Must reference an existing category if provided
+
+### Service Category Fields
+
+- **name:**
+  - Type: String
+  - Max length: 255 characters
+  - Required for creation
+  - Cannot be null
+
+- **description:**
+  - Type: Text
+  - Optional
+  - Can be null
+
+- **is_active:**
   - Type: Boolean
   - Default: true
-  - Indicates if service needs a provider assignment
 
 ---
 
 ## Example Use Cases
 
-### Creating Multiple Service Types
+### Creating Services with Categories
 
-**1. Service requiring a provider:**
+**1. Create a category:**
 ```json
-POST /services
+POST /service-categories
 {
-  "name": "Personal Training Session",
-  "description": "One-on-one fitness training",
-  "duration_minutes": 60,
-  "price": 75.00,
-  "is_active": true,
-  "requires_provider": true
+  "name": "Massage",
+  "description": "Bodywork services",
+  "is_active": true
 }
 ```
 
-**2. Service not requiring a provider:**
+**2. Create a service assigned to that category:**
 ```json
 POST /services
 {
-  "name": "Gym Access Pass",
-  "description": "Day pass for gym facilities",
-  "duration_minutes": 480,
-  "price": 15.00,
-  "is_active": true,
-  "requires_provider": false
+  "name": "Deep Tissue Massage",
+  "description": "Targeted muscle relief",
+  "service_category_id": 3
 }
 ```
 
-**3. Inactive service (for testing or future use):**
+**3. Remove a category assignment:**
 ```json
-POST /services
+PUT /services/1
 {
-  "name": "Pool Therapy",
-  "description": "Aquatic therapy sessions",
-  "duration_minutes": 45,
-  "price": 60.00,
-  "is_active": false,
-  "requires_provider": true
+  "service_category_id": null
 }
 ```
-
-### Workflow Examples
-
-**1. Listing active services only (requires application-level filtering):**
-```bash
-# Get all services and filter on client side
-curl http://localhost:3000/services
-```
-
-**2. Getting service with available providers:**
-```bash
-curl http://localhost:3000/services/1?includeProviders=true
-```
-
-**3. Temporarily disabling a service:**
-```bash
-curl -X PUT http://localhost:3000/services/1 \
-  -H "Content-Type: application/json" \
-  -d '{"is_active": false}'
-```
-
-**4. Updating pricing:**
-```bash
-curl -X PUT http://localhost:3000/services/1 \
-  -H "Content-Type: application/json" \
-  -d '{"price": 95.00}'
-```
-
----
-
-## Best Practices
-
-1. **Service Naming:**
-   - Use clear, descriptive names
-   - Keep consistent naming conventions
-   - Avoid special characters
-
-2. **Pricing:**
-   - Always use 2 decimal places
-   - Consider currency when setting prices
-   - Update prices using the update endpoint
-
-3. **Duration:**
-   - Set realistic durations
-   - Include buffer time if needed
-   - Consider transition time between appointments
-
-4. **Active Status:**
-   - Use `is_active: false` instead of deleting services
-   - Maintain historical data for reporting
-   - Inactive services can be reactivated later
-
-5. **Provider Relationships:**
-   - Use `includeProviders` parameter when you need to show available staff
-   - Services with `requires_provider: false` can be booked without staff assignment
 
 ---
 
@@ -535,20 +621,20 @@ curl -X PUT http://localhost:3000/services/1 \
 
 - **Provider API:** Manage providers who can perform services
 - **Reservation API:** Book services for users
-- **Provider Service Relations API:** Assign providers to services
+- **Service Variants API:** Manage service duration and pricing
 
 ---
 
 ## Version History
 
-- **v1.0** (Initial Release)
-  - Basic CRUD operations for services
-  - Provider relationship support
-  - Active/inactive status management
+- **v1.1** (Service categories)
+  - Added service categories
+  - Added `service_category_id` on services
+  - Added `includeCategory` query option
+  - Added `/service-categories` CRUD endpoints
 
 ---
 
 ## Support
 
 For issues or questions about the Services API, please contact the development team or refer to the main project documentation.
-

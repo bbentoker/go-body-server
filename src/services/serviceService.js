@@ -1,4 +1,4 @@
-const { Service, ServiceVariant, User } = require('../models');
+const { Service, ServiceVariant, ServiceCategory, User } = require('../models');
 
 const providerInclude = {
   model: User,
@@ -11,6 +11,11 @@ const variantInclude = {
   as: 'variants',
 };
 
+const categoryInclude = {
+  model: ServiceCategory,
+  as: 'category',
+};
+
 function buildInclude(options = {}) {
   const include = [];
 
@@ -20,6 +25,10 @@ function buildInclude(options = {}) {
 
   if (options.includeVariants) {
     include.push(variantInclude);
+  }
+
+  if (options.includeCategory) {
+    include.push(categoryInclude);
   }
 
   return include.length > 0 ? include : undefined;
