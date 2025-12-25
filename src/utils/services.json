@@ -21,7 +21,7 @@
             ]
         }
     ],
-    "GO- BASIC": [
+    "GO- Basic": [
         {
             "service_name": "Meet Massage / Beden tanıma seansı",
             "description": "Reset Massage, masaja yeni başlayanlar veya uzun süredir masaj almamış kişiler için tasarlanmış, kasların rahatlamasını desteklerken, bedenin dokunuşa verdiği otomatik koruyucu tepkilerin azalmasına yardımcı olur ve kas dokusunda stres oluşturmadan uygulanır. Go-Body sürecinde kişiye özel masaj planının doğru şekilde oluşturulabilmesi için ideal bir başlangıç seansıdır. Tanı veya tedavi amacı taşımaz; destekleyici bir masaj uygulamasıdır.",
@@ -47,7 +47,7 @@
             ]
         }
     ],
-    "GO- DETOX": [
+    "GO- Detox": [
         {
             "service_name": "Manual Lymphatic Drainage / Manuel Lenf drenaj",
             "description": "Manuel Lenf Drenajı (MLD); lenf sisteminin anatomisi ve fizyolojisi temel alınarak geliştirilmiş, yavaş, ritmik ve yüzeyel manuel tekniklerle uygulanan özel bir masaj yaklaşımıdır. Uygulama sırasında lenf düğümleri (lenf noktaları) öncelikle uyarılır, ardından dokularda biriken interstisyel sıvının (ödemin) lenf damarları boyunca bu düğümlere doğru yönlendirilmesi hedeflenir. Bası şiddeti içermeyen bu teknik, kan dolaşımını zorlamadan lenfatik akışı destekler; ödem, ağırlık ve gerginlik hissinin azalmasına yardımcı olurken bedenin kendi sıvı denge mekanizmalarıyla uyum içinde çalışır. Manuel Lenf Drenajı destekleyici bir masaj uygulamasıdır; tanı veya tedavi amacı taşımaz.",
@@ -81,7 +81,7 @@
             ]
         }
     ],
-    "GO- Individual needs": [
+    "GO- Individual Needs": [
         {
             "service_name": "Geriatric Massage +60",
             "description": "60 yaş ve üzeri bireyler için özel olarak tasarlanmış bir masaj yaklaşımıdır. Yaş alan bedenlerin hareketlilik, gevşeme ve yaşam kalitesi ihtiyaçlarını merkeze alarak uygulanır.",
@@ -162,7 +162,7 @@
             ]
         }
     ],
-    "GO- MOM'S": [
+    "GO- Mom's": [
         {
             "service_name": "Pre-Pregnancy Massage / Hamilelik öncesi",
             "variations": [
@@ -209,7 +209,7 @@
             ]
         }
     ],
-    "go - Signatures": [
+    "GO- Signatures": [
         {
             "service_name": "Structural Balance Session",
             "variations": [
@@ -282,7 +282,7 @@
             ]
         }
     ],
-    "go- WOMEN": [
+    "GO- Women": [
         {
             "service_name": "Kadın Döngüsü & Pelvik Denge",
             "variations": [
@@ -293,7 +293,7 @@
             ]
         }
     ],
-    "go- face": [
+    "GO- Face": [
         {
             "service_name": "Face Lifting (Yüz ve dekolte için lifting etkisi)",
             "variations": [
@@ -306,7 +306,7 @@
             ]
         }
     ],
-    "Go-extras": [
+    "GO- Extras": [
         {
             "service_name": "Kupa (Dry Cupping terapi)",
             "description": "Cilt üzerine yerleştirilen özel kupalarla vakum etkisi oluşturularak uygulanır, kas gerginliğinin azalmasına, dokuların rahatlamasına ve dolaşım hissinin artmasına yardımcı olur. Uygulama süresi ve vakum seviyesi kişisel toleransa göre ayarlanır; uygulama sonrası oluşabilen izler geçicidir. Kesme veya kan alma içermez. Destekleyici bir uygulamadır; tanı veya tedavi amacı taşımaz.",
