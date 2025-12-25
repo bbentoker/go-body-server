@@ -159,16 +159,7 @@ const listServicesWithoutPrice = asyncHandler(async (req, res) => {
     includeCategory,
   });
 
-  const sanitized = services.map((service) => {
-    const plain = service?.get ? service.get({ plain: true }) : service;
-    const variants = (plain?.variants || []).map((variant) => {
-      const { price, ...variantRest } = variant;
-      return variantRest;
-    });
-    return { ...plain, variants };
-  });
-
-  return res.json(sanitized);
+  return res.json(services);
 });
 
 function extractVariantPayload(body, overrides = {}, options = {}) {
