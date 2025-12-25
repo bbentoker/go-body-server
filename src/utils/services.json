@@ -1,5 +1,5 @@
 {
-    "GO- Pet Touch": [
+    "GO - Pet Touch": [
         {
             "service_name": "Pet Relax Massage",
             "description": "Evcil hayvanınızın aşırı hareketlilik, huzursuzluk, tırmalama ve yeni bir ortama alışma sürecinde daha sakin ve güvende hissetmesine yardımcı olmak için tasarlanmış, nazik ve rahatlatıcı bir masaj uygulamasıdır. Yumuşak, ritmik dokunuşlar sayesinde gevşeme ve dinlenme halini destekler; uygulama tamamen hayvanınızın konforuna göre ilerler. Destekleyici bir bakım uygulamasıdır, veteriner tedavisinin yerine geçmez.",
@@ -21,10 +21,10 @@
             ]
         }
     ],
-    "GO- Basic": [
+    "GO - Basic": [
         {
             "service_name": "Meet Massage / Beden tanıma seansı",
-            "description": "Reset Massage, masaja yeni başlayanlar veya uzun süredir masaj almamış kişiler için tasarlanmış, kasların rahatlamasını desteklerken, bedenin dokunuşa verdiği otomatik koruyucu tepkilerin azalmasına yardımcı olur ve kas dokusunda stres oluşturmadan uygulanır. Go-Body sürecinde kişiye özel masaj planının doğru şekilde oluşturulabilmesi için ideal bir başlangıç seansıdır. Tanı veya tedavi amacı taşımaz; destekleyici bir masaj uygulamasıdır.",
+            "description": "Reset Massage, masaja yeni başlayanlar veya uzun süredir masaj almamış kişiler için tasarlanmış, kasların rahatlamasını desteklerken, bedenin dokunuşa verdiği otomatik koruyucu tepkilerin azalmasına yardımcı olur ve kas dokusunda stres oluşturmadan uygulanır. Go -Body sürecinde kişiye özel masaj planının doğru şekilde oluşturulabilmesi için ideal bir başlangıç seansıdır. Tanı veya tedavi amacı taşımaz; destekleyici bir masaj uygulamasıdır.",
             "variations": [
                 "75",
                 "90"
@@ -47,7 +47,7 @@
             ]
         }
     ],
-    "GO- Detox": [
+    "GO - Detox": [
         {
             "service_name": "Manual Lymphatic Drainage / Manuel Lenf drenaj",
             "description": "Manuel Lenf Drenajı (MLD); lenf sisteminin anatomisi ve fizyolojisi temel alınarak geliştirilmiş, yavaş, ritmik ve yüzeyel manuel tekniklerle uygulanan özel bir masaj yaklaşımıdır. Uygulama sırasında lenf düğümleri (lenf noktaları) öncelikle uyarılır, ardından dokularda biriken interstisyel sıvının (ödemin) lenf damarları boyunca bu düğümlere doğru yönlendirilmesi hedeflenir. Bası şiddeti içermeyen bu teknik, kan dolaşımını zorlamadan lenfatik akışı destekler; ödem, ağırlık ve gerginlik hissinin azalmasına yardımcı olurken bedenin kendi sıvı denge mekanizmalarıyla uyum içinde çalışır. Manuel Lenf Drenajı destekleyici bir masaj uygulamasıdır; tanı veya tedavi amacı taşımaz.",
@@ -81,7 +81,7 @@
             ]
         }
     ],
-    "GO- Individual Needs": [
+    "GO - Individual Needs": [
         {
             "service_name": "Geriatric Massage +60",
             "description": "60 yaş ve üzeri bireyler için özel olarak tasarlanmış bir masaj yaklaşımıdır. Yaş alan bedenlerin hareketlilik, gevşeme ve yaşam kalitesi ihtiyaçlarını merkeze alarak uygulanır.",
@@ -107,7 +107,7 @@
             ]
         }
     ],
-    "GO- Professional": [
+    "GO - Professional": [
         {
             "service_name": "Recovery Massage / Spor & Toparlanma",
             "description": "Profesyonel ve rekreasyonel sporcular için tasarlanan bu seansta masaj teknik ve yaklaşımında spor branşının gerekliliklerine gözetilir. Her birey için değişken olan toparlanma sürecini spor bilimleri odağında, fonksiyonel olarak hızlandırmayı hedefler. Antrenman performansını destekleyen fonksiyonel bir çözümdür. Destekleyici bir masaj uygulamasıdır; tanı veya tedavi amacı taşımaz.",
@@ -123,219 +123,249 @@
             ]
         }
     ],
-    "GO- Classics": [
+    "GO - Classics": [
         {
             "service_name": "Deep Tissue Massage / Derin doku masajı",
-            "variations": [
-                "60",
-                "75",
-                "90"
-            ],
-            "prices": [
-                "3300",
-                "4000",
-                "4500"
-            ]
-        },
-        {
-            "service_name": "Chronic Pain Release / Kronik ağrı masajı",
-            "variations": [
-                "60",
-                "75",
-                "90"
-            ],
-            "prices": [
-                "3300",
-                "4000",
-                "4500"
-            ]
-        },
-        {
-            "service_name": "Aromatherapy Massage / Aromaterapi masajı",
-            "variations": [
-                "60",
-                "75"
-            ],
-            "prices": [
-                "3300",
-                "4000"
-            ]
-        }
+            "description": "Literatürde, yavaş ve derin manuel basının mekanotransdüksiyon yoluyla dokusal 
+                yanıtları etkileyebileceği; bu etkinin kas sertliği, hareket kısıtlılığı ve 
+                algılanan gerginlik üzerinde destekleyici rol oynayabileceği bildirilmektedir. bedenin davranış biçimlerini, duruş kalitesini ve genel hareket kapasitesini de destekler.
+                Uygulama bireyin doku toleransına göre planlanır, zorlayıcı veya travmatik teknikler içermez. Destekleyici bir masaj uygulamasıdır; tanı veya tedavi amacı taşımaz.","variations": ["60","75","90"
+        ],
+        "prices": [
+            "3300",
+            "4000",
+            "4500"
+        ]
+    },
+    {
+        "service_name": "Chronic Pain Release / Kronik ağrı masajı",
+        "description": "Kronik Ağrı Masajı; uzun süredir devam eden ağrıların hareket alışkanlıkları,
+ yüklenme biçimleri ve doku adaptasyonlarıyla olan ilişkisini dikkate alarak uygulanan
+ destekleyici bir masaj yaklaşımıdır. amaç ağrıyı bastırmak değil, bedenin daha konforlu ve dengeli hareket etmesini desteklemektir. Uygulama bireysel toleransa göre, kontrollü ve zorlayıcı olmayan tekniklerle gerçekleştirilir.
+Destekleyici bir masaj uygulamasıdır; tanı veya tedavi amacı taşımaz.","variations": ["60","75",
+        "90"
     ],
-    "GO- Mom's": [
-        {
-            "service_name": "Pre-Pregnancy Massage / Hamilelik öncesi",
-            "variations": [
-                "60"
-            ],
-            "prices": [
-                "3500"
-            ]
-        },
-        {
-            "service_name": "Prenatal Massage / Hamile masajı",
-            "variations": [
-                "60"
-            ],
-            "prices": [
-                "3500"
-            ]
-        },
-        {
-            "service_name": "Luna-care / Hamile bakım",
-            "variations": [
-                "60"
-            ],
-            "prices": [
-                "3500"
-            ]
-        },
-        {
-            "service_name": "Postpartum Massage / Emzirme / Lohusa masajı",
-            "variations": [
-                "75"
-            ],
-            "prices": [
-                "4200"
-            ]
-        },
-        {
-            "service_name": "Bebek masajı",
-            "variations": [
-                "30"
-            ],
-            "prices": [
-                "3500"
-            ]
-        }
-    ],
-    "GO- Signatures": [
-        {
-            "service_name": "Structural Balance Session",
-            "variations": [
-                "60",
-                "75"
-            ],
-            "prices": [
-                "3500",
-                "4200"
-            ]
-        },
-        {
-            "service_name": "Neuromuscular Release Massage",
-            "variations": [
-                "60",
-                "75"
-            ],
-            "prices": [
-                "3500",
-                "4200"
-            ]
-        },
-        {
-            "service_name": "Release Ritual Massage / Go-Flow Masajı",
-            "variations": [
-                "60",
-                "75",
-                "90"
-            ],
-            "prices": [
-                "3500",
-                "4200",
-                "4700"
-            ]
-        },
-        {
-            "service_name": "Somatic Alignment Massage",
-            "variations": [
-                "75"
-            ],
-            "prices": [
-                "4200"
-            ]
-        },
-        {
-            "service_name": "Vagus Reset Massage",
-            "variations": [
-                "60"
-            ],
-            "prices": [
-                "3500"
-            ]
-        },
-        {
-            "service_name": "Sonic Release Therapy",
-            "variations": [
-                "60"
-            ],
-            "prices": [
-                "3500"
-            ]
-        },
-        {
-            "service_name": "Mind–Body Awareness",
-            "variations": [
-                "60"
-            ],
-            "prices": [
-                "3500"
-            ]
-        }
-    ],
-    "GO- Women": [
-        {
-            "service_name": "Kadın Döngüsü & Pelvik Denge",
-            "variations": [
-                "60"
-            ],
-            "prices": [
-                "3300"
-            ]
-        }
-    ],
-    "GO- Face": [
-        {
-            "service_name": "Face Lifting (Yüz ve dekolte için lifting etkisi)",
-            "variations": [
-                "30",
-                "45"
-            ],
-            "prices": [
-                "3000",
-                "4000"
-            ]
-        }
-    ],
-    "GO- Extras": [
-        {
-            "service_name": "Kupa (Dry Cupping terapi)",
-            "description": "Cilt üzerine yerleştirilen özel kupalarla vakum etkisi oluşturularak uygulanır, kas gerginliğinin azalmasına, dokuların rahatlamasına ve dolaşım hissinin artmasına yardımcı olur. Uygulama süresi ve vakum seviyesi kişisel toleransa göre ayarlanır; uygulama sonrası oluşabilen izler geçicidir. Kesme veya kan alma içermez. Destekleyici bir uygulamadır; tanı veya tedavi amacı taşımaz.",
-            "variations": [
-                "-"
-            ],
-            "prices": [
-                "1000"
-            ]
-        },
-        {
-            "service_name": "El & Ayak",
-            "description": "El ve Ayak Masajı; gün boyunca en çok kullanılan ve yük taşıyan bölgelerde rahatlama ve gevşeme hissini desteklemek amacıyla uygulanan, odaklı bir masajdır. Avuç içi, parmaklar, ayak tabanı ve bilek çevresinde yapılan ritmik dokunuşlar, gerginliğin azalmasına ve genel konfor hissinin artmasına yardımcı olur.",
-            "variations": [
-                "30"
-            ],
-            "prices": [
-                "750"
-            ]
-        },
-        {
-            "service_name": "Dekolte & Kafa",
-            "description": "Boyun çevresi, omuz üstü, dekolte bölgesi ve saçlı deride uygulanan, rahatlama ve gevşeme hissini destekleyen hedefli bir masajdır. Günlük stresin üst bedende yarattığı gerginliğin azalmasına yardımcı olurken, zihinsel olarak sakinleşme ve ferahlık hissi sunar.",
-            "variations": [
-                "15"
-            ],
-            "prices": [
-                "750"
-            ]
-        }
+    "prices": [
+        "3300",
+        "4000",
+        "4500"
     ]
+},
+{
+    "service_name": "Aromatherapy Massage / Aromaterapi masajı",
+    "description": "Aromaterapi masajında kullanılan ılık yağlar; seansın amacı, danışanın koku tercihi, cilt yapısı ve hassasiyetleri göz önünde bulundurularak seçilir. Uygulama kişiye özel olarak planlanan akışkan ve ritmik dokunuşlara dayalı rahatlatıcı bir masajdır. 
+Koku duyusu ve temasın birlikte yarattığı deneyim, zihinsel gevşemeyi ve
+ bedensel rahatlamayı destekler. Seans boyunca seçilen yağlar, kişisel tercihler ve
+ hassasiyetler göz önünde bulundurularak kullanılır; uygulama yumuşak ve dengeli bir ritimle ilerler. fiziksel ve mental gevşemeyi amaçlayan bir masaj uygulamasıdır. %100 organik yağlar kullanılır.","variations": ["60",
+    "75"
+],
+"prices": [
+    "3300",
+    "4000"
+]
+}
+],
+"GO - Mom's": [
+{
+"service_name": "Pre-Pregnancy Massage / Hamilelik öncesi",
+"description": "Merkez hattı, bel–kalça çevresi ve diyafram bölgesindeki gerginliklerin azalmasına yardımcı olarak 
+bedenin doğal ritmini ve akış hissini destekler. Beden farkındalığını artırarak, 
+anne olmayı planlayan adaylar için sakinleştirici ve rahatlatıcı bir deneyim sunar.","variations": [
+    "60"
+],
+"prices": [
+    "3500"
+]
+},
+{
+"service_name": "Prenatal Massage / Hamile masajı",
+"description":"Hamileliğin 3., 4. ve 5. aylarında, sürecin doğal gereklilikleri göz önünde bulundurularak planlanır ve uygulanır.
+ Gerekli görülen durumlarda doktorunuz ile iş birliği içinde, güvenle gerçekleştirilen seanslardır.","variations": [
+    "60"
+],
+"prices": [
+    "3500"
+]
+},
+{
+"service_name": "Luna-care / Hamile bakım",
+"description":"Hamileliğin 3–6. ayları için uygun, anne adaylarının bedensel rahatlamasını ve 
+duygusal denge hissini destekleyen bir bakım uygulamasıdır. 
+Masaj ve nefes rehberliği birlikte ele alınarak, sürecin daha sakin ve konforlu deneyimlenmesine yardımcı olur.
+Destekleyici bir bakım uygulamasıdır.","variations": [
+    "60"
+],
+"prices": [
+    "3500"
+]
+},
+{
+"service_name": "Postpartum Massage / Emzirme / Lohusa masajı",
+"description":"Doğum sonrası emzirme döneminde, omurga ve kaslar üzerindeki yükü hafifletmeye, 
+sinir sisteminde gevşeme hissini desteklemeye odaklanan bir masaj yaklaşımıdır.","variations": [
+    "75"
+],
+"prices": [
+    "4200"
+]
+},
+{
+"service_name": "Bebek masajı",
+"description":"
+    Özellikle kolik bebekler için önerilir. Anne gözetiminde uygulanır; gerekli durumlarda
+ anne ve/veya baba sürece dahil edilerek ilerlenir. 
+Profesyonel bebek masajı eğitimi almış terapist eşliğinde, 
+güvenli bağlanmayı destekleyen bir bakım yaklaşımı sunar.
+ Doğum sonrası 1–36 ay arası bebekler için uygundur.
+    ","variations": [
+    "30"
+],
+"prices": [
+    "3500"
+]
+}
+],
+"GO - Signatures": [
+{
+"service_name": "Structural Balance Session",
+"description": "Vücudun doğal hatlarını takip eden özel bası teknikleriyle uygulanan modern bir masaj yaklaşımıdır. Özellikle postüre bağlı kas gerginliklerinin azalmasına ve gevşemeye destek olmak amacıyla önerilir.",
+"variations": [
+    "60",
+    "75"
+],
+"prices": [
+    "3500",
+    "4200"
+]
+},
+{
+"service_name": "Neuromuscular Release Massage",
+"description":"Kas hatlarındaki yoğunluğu yumuşatmaya, sinir sisteminde sakinleşme hissini desteklemeye ve
+ bedende genel bir denge hissi oluşturmaya odaklanan modern bir masaj yaklaşımıdır.","variations": [
+    "60",
+    "75"
+],
+"prices": [
+    "3500",
+    "4200"
+]
+},
+{
+"service_name": "Release Ritual Massage / Go -Flow Masajı",
+"description": "Yoğun stres, öfke, bastırılmış duygu yaşayan bireyler için uygun bir masaj yaklaşımıdır",
+"variations": [
+    "60",
+    "75",
+    "90"
+],
+"prices": [
+    "3500",
+    "4200",
+    "4700"
+]
+},
+{
+"service_name": "Somatic Alignment Massage",
+"description": "Beden haritası üzerinden zihinsel odaklanmayı arttırmayı hedefleyen bir masaj yaklaşımıdır",
+"variations": [
+    "75"
+],
+"prices": [
+    "4200"
+]
+},
+{
+"service_name": "Vagus Reset Massage",
+"description":"Sinir sisteminin ana ileti yolu olan vagus sinirini rahatlatmaya ve
+ “parasempatik moda” geçişini kolaylaştırmaya odaklanır.","variations": [
+    "60"
+],
+"prices": [
+    "3500"
+]
+},
+{
+"service_name": "Sonic Release Therapy",
+"description":"Dokunuşla birlikte ses titreşimlerini kullanan, 
+derin gevşeme ve sakinleşme hissini destekleyen bir masaj uygulamasıdır.","variations": [
+    "60"
+],
+"prices": [
+    "3500"
+]
+},
+{
+"service_name": "Mind–Body Awareness",
+"description": "Nefes ve vücut farkındalığı üzerine yoğunlaşan wellness & masaj yaklaşımı",
+"variations": [
+    "60"
+],
+"prices": [
+    "3500"
+]
+}
+],
+"GO - Women": [
+{
+"service_name": "Kadın Döngüsü & Pelvik Denge",
+"description": "PMS, regl ağrısı, hormonal dengesizlik, pelvik gerginliği hedef alan bir modern yaklaşım",
+"variations": [
+    "60"
+],
+"prices": [
+    "3300"
+]
+}
+],
+"GO - Face": [
+{
+"service_name": "Face Lifting (Yüz ve dekolte için lifting etkisi)",
+"description":"Face Lifting Masajı; yüz, boyun ve dekolte bölgesine özel olarak uygulanan, manuel masaj tekniklerinin TheraFace cihazı ile desteklendiği ileri seviye bir bakım ritüelidir.
+
+Elle uygulanan kontrollü ve akıcı teknikler; TheraFace’in titreşim ve mikro masaj başlıklarıyla birlikte kullanılarak yüz kaslarının rahatlamasını, dolaşımın desteklenmesini ve dokuların daha dengeli çalışmasını amaçlar. Bu bütüncül yaklaşım, uygulama sonrasında yüzde daha toparlanmış, daha açık ve yukarı yönlü bir his (lift etkisi) oluşmasına katkı sağlar.
+
+TheraFace desteği; cilt ve yumuşak dokular üzerinde nazik, ritmik bir uyarım oluşturarak manuel çalışmanın etkisini tamamlayıcı nitelikte kullanılır. Uygulama sırasında invaziv yöntemler uygulanmaz; cildin doğal yapısı ve yüz ifadesinin özgünlüğü korunur.
+
+Face Lifting Masajı; estetik veya tıbbi bir işlem değildir. Doğal süreçleri destekleyen, sakinleştirici, özenli ve düzenli uygulamalarda etkisi artan bir yüz bakım deneyimidir.","variations": [
+    "30",
+    "45"
+],
+"prices": [
+    "3000",
+    "4000"
+]
+}
+],
+"GO - Extras": [
+{
+"service_name": "Kupa (Dry Cupping terapi)",
+"description": "Cilt üzerine yerleştirilen özel kupalarla vakum etkisi oluşturularak uygulanır, kas gerginliğinin azalmasına, dokuların rahatlamasına ve dolaşım hissinin artmasına yardımcı olur. Uygulama süresi ve vakum seviyesi kişisel toleransa göre ayarlanır; uygulama sonrası oluşabilen izler geçicidir. Kesme veya kan alma içermez. Destekleyici bir uygulamadır; tanı veya tedavi amacı taşımaz.",
+"variations": [
+    "-"
+],
+"prices": [
+    "1000"
+]
+},
+{
+"service_name": "El & Ayak",
+"description": "El ve Ayak Masajı; gün boyunca en çok kullanılan ve yük taşıyan bölgelerde rahatlama ve gevşeme hissini desteklemek amacıyla uygulanan, odaklı bir masajdır. Avuç içi, parmaklar, ayak tabanı ve bilek çevresinde yapılan ritmik dokunuşlar, gerginliğin azalmasına ve genel konfor hissinin artmasına yardımcı olur.",
+"variations": [
+    "30"
+],
+"prices": [
+    "750"
+]
+},
+{
+"service_name": "Dekolte & Kafa",
+"description": "Boyun çevresi, omuz üstü, dekolte bölgesi ve saçlı deride uygulanan, rahatlama ve gevşeme hissini destekleyen hedefli bir masajdır. Günlük stresin üst bedende yarattığı gerginliğin azalmasına yardımcı olurken, zihinsel olarak sakinleşme ve ferahlık hissi sunar.",
+"variations": [
+    "15"
+],
+"prices": [
+    "750"
+]
+}
+]
 }
