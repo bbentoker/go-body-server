@@ -172,7 +172,7 @@ const listServicesWithoutPrice = asyncHandler(async (req, res) => {
 
 function extractVariantPayload(body, overrides = {}, options = {}) {
   const fields = ['name', 'duration_minutes', 'price', 'is_active'];
-  const { requiredFields = [], includeNull = true } = options;
+  const { requiredFields = [], includeNull = true, nullableFields = [] } = options;
 
   const raw = { ...body, ...overrides };
   const payload = {};
