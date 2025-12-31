@@ -85,7 +85,57 @@ All routes are prefixed with `/public`. Some endpoints are open, others require 
 ### 4. List Services Without Price
 **Endpoint:** `GET /public/services`  
 **Auth:** Not required  
-**Description:** Returns all services/products with the `price` field removed. Useful for public menus without showing pricing.
+**Description:** Returns all services/products with the `price` field removed. Useful for public menus without showing pricing. Each service includes its category information, and a separate categories list is also provided.
+
+**Response:**
+```json
+{
+  "services": [
+    {
+      "service_id": 1,
+      "name": "Deep Tissue Massage",
+      "description": "...",
+      "is_active": true,
+      "service_category_id": 2,
+      "service_category": {
+        "service_category_id": 2,
+        "name": "GO - Classics",
+        "description": "..."
+      },
+      "variants": [
+        {
+          "variant_id": 1,
+          "name": "60 min",
+          "duration_minutes": 60
+        }
+      ]
+    }
+  ],
+  "categories": [
+    {
+      "service_category_id": 1,
+      "name": "GO - Basic",
+      "description": "..."
+    },
+    {
+      "service_category_id": 2,
+      "name": "GO - Classics",
+      "description": "..."
+    }
+  ]
+}
+```
+
+**Fields:**
+- `services` - Array of service objects, each with:
+  - `service_id` - Service ID
+  - `name` - Service name
+  - `description` - Service description
+  - `is_active` - Whether the service is active
+  - `service_category_id` - ID of the parent category
+  - `service_category` - Embedded category object with `service_category_id`, `name`, and `description`
+  - `variants` - Array of service variants (without price field)
+- `categories` - Array of all service categories, ordered alphabetically by name
 
 ---
 

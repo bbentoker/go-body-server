@@ -152,14 +152,22 @@ const deleteService = asyncHandler(async (req, res) => {
 });
 
 const listServicesWithoutPrice = asyncHandler(async (req, res) => {
-  const includeCategory = parseBooleanFlag(req.query.includeCategory);
+  // Always include category info on services
   const services = await serviceService.getServices({
     includeProviders: false,
     includeVariants: true,
-    includeCategory,
+    includeCategory: true,
   });
 
-  return res.json(services);
+  // Get all categories for the frontend
+  const categories = await serviceCategoryService.getCategories({
+    order: [['name', 'ASC']],
+  });
+
+  return res.json({
+    services,
+    categories,
+  });
 });
 
 function extractVariantPayload(body, overrides = {}, options = {}) {
