@@ -590,10 +590,10 @@ async function notifyAdminsOfPendingReservation(reservation, customer) {
       return [];
     }
 
-    // Format date and time for display (Turkish locale)
+    // Format date and time for display (Turkish locale and timezone)
     const startDate = new Date(reservation.start_time);
-    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const timeOptions = { hour: '2-digit', minute: '2-digit' };
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Europe/Istanbul' };
+    const timeOptions = { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' };
     const formattedDate = startDate.toLocaleDateString('tr-TR', dateOptions);
     const formattedTime = startDate.toLocaleTimeString('tr-TR', timeOptions);
 
@@ -665,10 +665,10 @@ async function notifyCustomerOfApprovedReservation(reservation, customer) {
       return null;
     }
 
-    // Format date and time for display (Turkish locale)
+    // Format date and time for display (Turkish locale and timezone)
     const startDate = new Date(reservation.start_time);
-    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const timeOptions = { hour: '2-digit', minute: '2-digit' };
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Europe/Istanbul' };
+    const timeOptions = { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' };
     const formattedDate = startDate.toLocaleDateString('tr-TR', dateOptions);
     const formattedTime = startDate.toLocaleTimeString('tr-TR', timeOptions);
 
@@ -720,10 +720,10 @@ async function notifyCustomerOfRejectedReservation(reservation, customer, reason
       return null;
     }
 
-    // Format date and time for display (Turkish locale)
+    // Format date and time for display (Turkish locale and timezone)
     const startDate = new Date(reservation.start_time);
-    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const timeOptions = { hour: '2-digit', minute: '2-digit' };
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Europe/Istanbul' };
+    const timeOptions = { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' };
     const formattedDate = startDate.toLocaleDateString('tr-TR', dateOptions);
     const formattedTime = startDate.toLocaleTimeString('tr-TR', timeOptions);
 
