@@ -147,7 +147,6 @@ function generateHtmlFromTemplate(templateName, data) {
             <li style="margin-bottom: 8px;"><strong>E-posta:</strong> ${data.customerEmail}</li>
             ${data.customerPhone ? `<li style="margin-bottom: 8px;"><strong>Telefon:</strong> ${data.customerPhone}</li>` : ''}
             <li style="margin-bottom: 8px;"><strong>Hizmet:</strong> ${data.serviceName}</li>
-            ${data.variantName ? `<li style="margin-bottom: 8px;"><strong>Seçenek:</strong> ${data.variantName}</li>` : ''}
             <li style="margin-bottom: 8px;"><strong>Tarih:</strong> ${data.date}</li>
             <li style="margin-bottom: 8px;"><strong>Saat:</strong> ${data.time}</li>
             <li style="margin-bottom: 8px;"><strong>Süre:</strong> ${data.duration} dakika</li>
@@ -167,7 +166,6 @@ function generateHtmlFromTemplate(templateName, data) {
           <h3 style="margin-top: 0; color: #155724;">Rezervasyon Detayları</h3>
           <ul style="list-style: none; padding: 0; margin: 0;">
             <li style="margin-bottom: 8px;"><strong>Hizmet:</strong> ${data.serviceName}</li>
-            ${data.variantName ? `<li style="margin-bottom: 8px;"><strong>Seçenek:</strong> ${data.variantName}</li>` : ''}
             <li style="margin-bottom: 8px;"><strong>Tarih:</strong> ${data.date}</li>
             <li style="margin-bottom: 8px;"><strong>Saat:</strong> ${data.time}</li>
             <li style="margin-bottom: 8px;"><strong>Süre:</strong> ${data.duration} dakika</li>
@@ -187,7 +185,6 @@ function generateHtmlFromTemplate(templateName, data) {
           <h3 style="margin-top: 0; color: #721c24;">Talep Detayları</h3>
           <ul style="list-style: none; padding: 0; margin: 0;">
             <li style="margin-bottom: 8px;"><strong>Hizmet:</strong> ${data.serviceName}</li>
-            ${data.variantName ? `<li style="margin-bottom: 8px;"><strong>Seçenek:</strong> ${data.variantName}</li>` : ''}
             <li style="margin-bottom: 8px;"><strong>Tarih:</strong> ${data.date}</li>
             <li style="margin-bottom: 8px;"><strong>Saat:</strong> ${data.time}</li>
           </ul>
@@ -230,13 +227,13 @@ function generateTextFromTemplate(templateName, data) {
       return `Reservation Cancelled\n\nHi ${data.firstName},\n\nYour reservation has been cancelled:\n- Service: ${data.serviceName}\n- Date: ${data.date}\n- Time: ${data.time}\n${data.reason ? `\nReason: ${data.reason}` : ''}\n\nIf you'd like to book another appointment, please visit our website.`;
 
     case EMAIL_TEMPLATES.PENDING_RESERVATION_REQUEST:
-      return `Yeni Rezervasyon Talebi\n\nMerhaba ${data.adminName || 'Admin'},\n\nYeni bir rezervasyon talebi gönderildi ve incelemenizi bekliyor:\n\nTalep Detayları:\n- Müşteri: ${data.customerName}\n- E-posta: ${data.customerEmail}\n${data.customerPhone ? `- Telefon: ${data.customerPhone}\n` : ''}- Hizmet: ${data.serviceName}\n${data.variantName ? `- Seçenek: ${data.variantName}\n` : ''}- Tarih: ${data.date}\n- Saat: ${data.time}\n- Süre: ${data.duration} dakika\n${data.notes ? `- Notlar: ${data.notes}\n` : ''}\nLütfen bu talebi inceleyip onaylayın veya reddedin.${data.dashboardUrl ? `\n\nPanelde Görüntüle: ${data.dashboardUrl}` : ''}`;
+      return `Yeni Rezervasyon Talebi\n\nMerhaba ${data.adminName || 'Admin'},\n\nYeni bir rezervasyon talebi gönderildi ve incelemenizi bekliyor:\n\nTalep Detayları:\n- Müşteri: ${data.customerName}\n- E-posta: ${data.customerEmail}\n${data.customerPhone ? `- Telefon: ${data.customerPhone}\n` : ''}- Hizmet: ${data.serviceName}\n- Tarih: ${data.date}\n- Saat: ${data.time}\n- Süre: ${data.duration} dakika\n${data.notes ? `- Notlar: ${data.notes}\n` : ''}\nLütfen bu talebi inceleyip onaylayın veya reddedin.${data.dashboardUrl ? `\n\nPanelde Görüntüle: ${data.dashboardUrl}` : ''}`;
 
     case EMAIL_TEMPLATES.RESERVATION_APPROVED:
-      return `Rezervasyonunuz Onaylandı!\n\nMerhaba ${data.firstName},\n\nHarika haber! Rezervasyon talebiniz onaylandı.\n\nRezervasyon Detayları:\n- Hizmet: ${data.serviceName}\n${data.variantName ? `- Seçenek: ${data.variantName}\n` : ''}- Tarih: ${data.date}\n- Saat: ${data.time}\n- Süre: ${data.duration} dakika\n${data.providerName ? `- Hizmet Veren: ${data.providerName}\n` : ''}\nSizi görmek için sabırsızlanıyoruz!\n\nHerhangi bir değişiklik yapmanız gerekirse lütfen bizimle iletişime geçin.`;
+      return `Rezervasyonunuz Onaylandı!\n\nMerhaba ${data.firstName},\n\nHarika haber! Rezervasyon talebiniz onaylandı.\n\nRezervasyon Detayları:\n- Hizmet: ${data.serviceName}\n- Tarih: ${data.date}\n- Saat: ${data.time}\n- Süre: ${data.duration} dakika\n${data.providerName ? `- Hizmet Veren: ${data.providerName}\n` : ''}\nSizi görmek için sabırsızlanıyoruz!\n\nHerhangi bir değişiklik yapmanız gerekirse lütfen bizimle iletişime geçin.`;
 
     case EMAIL_TEMPLATES.RESERVATION_REJECTED:
-      return `Rezervasyon Talebi Güncellemesi\n\nMerhaba ${data.firstName},\n\nÜzgünüz, rezervasyon talebiniz şu anda onaylanamadı.\n\nTalep Detayları:\n- Hizmet: ${data.serviceName}\n${data.variantName ? `- Seçenek: ${data.variantName}\n` : ''}- Tarih: ${data.date}\n- Saat: ${data.time}\n${data.reason ? `\nSebep: ${data.reason}\n` : ''}\nVerdiğimiz rahatsızlık için özür dileriz. Farklı bir zaman için yeni bir rezervasyon talebi gönderebilirsiniz.${data.bookingUrl ? `\n\nYeni Randevu Al: ${data.bookingUrl}` : ''}`;
+      return `Rezervasyon Talebi Güncellemesi\n\nMerhaba ${data.firstName},\n\nÜzgünüz, rezervasyon talebiniz şu anda onaylanamadı.\n\nTalep Detayları:\n- Hizmet: ${data.serviceName}\n- Tarih: ${data.date}\n- Saat: ${data.time}\n${data.reason ? `\nSebep: ${data.reason}\n` : ''}\nVerdiğimiz rahatsızlık için özür dileriz. Farklı bir zaman için yeni bir rezervasyon talebi gönderebilirsiniz.${data.bookingUrl ? `\n\nYeni Randevu Al: ${data.bookingUrl}` : ''}`;
 
     default:
       return data.text || '';
