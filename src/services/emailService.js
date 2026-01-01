@@ -19,6 +19,8 @@ const EMAIL_TEMPLATES = {
   RESERVATION_REMINDER: 'reservation_reminder',
   RESERVATION_CANCELLED: 'reservation_cancelled',
   PENDING_RESERVATION_REQUEST: 'pending_reservation_request',
+  RESERVATION_APPROVED: 'reservation_approved',
+  RESERVATION_REJECTED: 'reservation_rejected',
 };
 
 /**
@@ -156,6 +158,45 @@ function generateHtmlFromTemplate(templateName, data) {
         ${data.dashboardUrl ? `<a href="${data.dashboardUrl}" class="button">View in Dashboard</a>` : ''}
       `);
 
+    case EMAIL_TEMPLATES.RESERVATION_APPROVED:
+      return wrapHtml(`
+        <h2>Reservation Approved! 🎉</h2>
+        <p>Hi ${data.firstName},</p>
+        <p>Great news! Your reservation request has been approved.</p>
+        <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #155724;">Reservation Details</h3>
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            <li style="margin-bottom: 8px;"><strong>Service:</strong> ${data.serviceName}</li>
+            ${data.variantName ? `<li style="margin-bottom: 8px;"><strong>Variant:</strong> ${data.variantName}</li>` : ''}
+            <li style="margin-bottom: 8px;"><strong>Date:</strong> ${data.date}</li>
+            <li style="margin-bottom: 8px;"><strong>Time:</strong> ${data.time}</li>
+            <li style="margin-bottom: 8px;"><strong>Duration:</strong> ${data.duration} minutes</li>
+            ${data.providerName ? `<li style="margin-bottom: 8px;"><strong>Provider:</strong> ${data.providerName}</li>` : ''}
+          </ul>
+        </div>
+        <p>We look forward to seeing you!</p>
+        <p>If you need to make any changes, please contact us.</p>
+      `);
+
+    case EMAIL_TEMPLATES.RESERVATION_REJECTED:
+      return wrapHtml(`
+        <h2>Reservation Request Update</h2>
+        <p>Hi ${data.firstName},</p>
+        <p>We regret to inform you that your reservation request could not be approved at this time.</p>
+        <div style="background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #721c24;">Request Details</h3>
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            <li style="margin-bottom: 8px;"><strong>Service:</strong> ${data.serviceName}</li>
+            ${data.variantName ? `<li style="margin-bottom: 8px;"><strong>Variant:</strong> ${data.variantName}</li>` : ''}
+            <li style="margin-bottom: 8px;"><strong>Date:</strong> ${data.date}</li>
+            <li style="margin-bottom: 8px;"><strong>Time:</strong> ${data.time}</li>
+          </ul>
+          ${data.reason ? `<p style="margin-top: 15px;"><strong>Reason:</strong> ${data.reason}</p>` : ''}
+        </div>
+        <p>We apologize for any inconvenience. Please feel free to submit a new reservation request for a different time.</p>
+        ${data.bookingUrl ? `<a href="${data.bookingUrl}" class="button">Book Another Appointment</a>` : ''}
+      `);
+
     default:
       // For custom HTML, return the data.html if provided
       return data.html || '';
@@ -190,6 +231,12 @@ function generateTextFromTemplate(templateName, data) {
 
     case EMAIL_TEMPLATES.PENDING_RESERVATION_REQUEST:
       return `New Reservation Request\n\nHi ${data.adminName || 'Admin'},\n\nA new reservation request has been submitted and requires your attention:\n\nRequest Details:\n- Customer: ${data.customerName}\n- Email: ${data.customerEmail}\n${data.customerPhone ? `- Phone: ${data.customerPhone}\n` : ''}- Service: ${data.serviceName}\n${data.variantName ? `- Variant: ${data.variantName}\n` : ''}- Date: ${data.date}\n- Time: ${data.time}\n- Duration: ${data.duration} minutes\n${data.notes ? `- Notes: ${data.notes}\n` : ''}\nPlease review and approve or reject this request.${data.dashboardUrl ? `\n\nView in Dashboard: ${data.dashboardUrl}` : ''}`;
+
+    case EMAIL_TEMPLATES.RESERVATION_APPROVED:
+      return `Reservation Approved!\n\nHi ${data.firstName},\n\nGreat news! Your reservation request has been approved.\n\nReservation Details:\n- Service: ${data.serviceName}\n${data.variantName ? `- Variant: ${data.variantName}\n` : ''}- Date: ${data.date}\n- Time: ${data.time}\n- Duration: ${data.duration} minutes\n${data.providerName ? `- Provider: ${data.providerName}\n` : ''}\nWe look forward to seeing you!\n\nIf you need to make any changes, please contact us.`;
+
+    case EMAIL_TEMPLATES.RESERVATION_REJECTED:
+      return `Reservation Request Update\n\nHi ${data.firstName},\n\nWe regret to inform you that your reservation request could not be approved at this time.\n\nRequest Details:\n- Service: ${data.serviceName}\n${data.variantName ? `- Variant: ${data.variantName}\n` : ''}- Date: ${data.date}\n- Time: ${data.time}\n${data.reason ? `\nReason: ${data.reason}\n` : ''}\nWe apologize for any inconvenience. Please feel free to submit a new reservation request for a different time.${data.bookingUrl ? `\n\nBook Another Appointment: ${data.bookingUrl}` : ''}`;
 
     default:
       return data.text || '';
@@ -608,6 +655,114 @@ async function notifyAdminsOfPendingReservation(reservation, customer) {
   }
 }
 
+/**
+ * Notify customer that their reservation has been approved
+ * @param {Object} reservation - The reservation object with relations
+ * @param {Object} customer - The customer who made the request
+ * @returns {Promise<Object>} Email send result
+ */
+async function notifyCustomerOfApprovedReservation(reservation, customer) {
+  try {
+    if (!customer || !customer.email) {
+      console.log('Cannot notify customer: no email address available');
+      return null;
+    }
+
+    // Format date and time for display
+    const startDate = new Date(reservation.start_time);
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const timeOptions = { hour: '2-digit', minute: '2-digit' };
+    const formattedDate = startDate.toLocaleDateString('en-US', dateOptions);
+    const formattedTime = startDate.toLocaleTimeString('en-US', timeOptions);
+
+    // Extract service and variant names from the reservation
+    const serviceName = reservation.variant?.service?.name || 'Unknown Service';
+    const variantName = reservation.variant?.name || null;
+    const duration = reservation.variant?.duration_minutes || 0;
+
+    // Provider info
+    const providerName = reservation.provider
+      ? `${reservation.provider.first_name || ''} ${reservation.provider.last_name || ''}`.trim()
+      : null;
+
+    const result = await sendTemplateEmail({
+      to: customer.email,
+      subject: 'Your Reservation Has Been Approved! 🎉',
+      template: EMAIL_TEMPLATES.RESERVATION_APPROVED,
+      data: {
+        firstName: customer.first_name || 'Customer',
+        serviceName,
+        variantName,
+        date: formattedDate,
+        time: formattedTime,
+        duration,
+        providerName,
+      },
+      userId: customer.user_id,
+    });
+
+    console.log(`Sent reservation approved notification to ${customer.email}`);
+    return result;
+  } catch (error) {
+    console.error('Error notifying customer of approved reservation:', error);
+    throw error;
+  }
+}
+
+/**
+ * Notify customer that their reservation has been rejected
+ * @param {Object} reservation - The reservation object with relations
+ * @param {Object} customer - The customer who made the request
+ * @param {string} [reason] - Optional rejection reason
+ * @returns {Promise<Object>} Email send result
+ */
+async function notifyCustomerOfRejectedReservation(reservation, customer, reason = null) {
+  try {
+    if (!customer || !customer.email) {
+      console.log('Cannot notify customer: no email address available');
+      return null;
+    }
+
+    // Format date and time for display
+    const startDate = new Date(reservation.start_time);
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const timeOptions = { hour: '2-digit', minute: '2-digit' };
+    const formattedDate = startDate.toLocaleDateString('en-US', dateOptions);
+    const formattedTime = startDate.toLocaleTimeString('en-US', timeOptions);
+
+    // Extract service and variant names from the reservation
+    const serviceName = reservation.variant?.service?.name || 'Unknown Service';
+    const variantName = reservation.variant?.name || null;
+
+    // Build booking URL using FRONTEND_URL environment variable
+    const bookingUrl = process.env.FRONTEND_URL
+      ? `${process.env.FRONTEND_URL}/book`
+      : null;
+
+    const result = await sendTemplateEmail({
+      to: customer.email,
+      subject: 'Update on Your Reservation Request',
+      template: EMAIL_TEMPLATES.RESERVATION_REJECTED,
+      data: {
+        firstName: customer.first_name || 'Customer',
+        serviceName,
+        variantName,
+        date: formattedDate,
+        time: formattedTime,
+        reason,
+        bookingUrl,
+      },
+      userId: customer.user_id,
+    });
+
+    console.log(`Sent reservation rejected notification to ${customer.email}`);
+    return result;
+  } catch (error) {
+    console.error('Error notifying customer of rejected reservation:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   // Constants
   EMAIL_TEMPLATES,
@@ -627,7 +782,9 @@ module.exports = {
   getEventsByEmailId,
   getEmailStats,
 
-  // Admin notification
+  // Notification functions
   notifyAdminsOfPendingReservation,
+  notifyCustomerOfApprovedReservation,
+  notifyCustomerOfRejectedReservation,
 };
 

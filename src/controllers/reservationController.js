@@ -842,6 +842,14 @@ async function approveReservation(req, res) {
       includeRelations: true,
     });
 
+    // Notify customer about the approval
+    const customer = await userService.getUserById(completeReservation.user_id);
+    if (customer) {
+      // Send notification asynchronously - don't block the response
+      emailService.notifyCustomerOfApprovedReservation(completeReservation, customer)
+        .catch(err => console.error('Failed to notify customer of approved reservation:', err));
+    }
+
     res.json({
       message: 'Reservation approved successfully',
       reservation: completeReservation,
@@ -892,6 +900,14 @@ async function rejectReservation(req, res) {
     const completeReservation = await reservationService.getReservationById(id, {
       includeRelations: true,
     });
+
+    // Notify customer about the rejection
+    const customer = await userService.getUserById(completeReservation.user_id);
+    if (customer) {
+      // Send notification asynchronously - don't block the response
+      emailService.notifyCustomerOfRejectedReservation(completeReservation, customer, reason)
+        .catch(err => console.error('Failed to notify customer of rejected reservation:', err));
+    }
 
     res.json({
       message: 'Reservation rejected successfully',
