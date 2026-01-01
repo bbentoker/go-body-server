@@ -137,64 +137,64 @@ function generateHtmlFromTemplate(templateName, data) {
 
     case EMAIL_TEMPLATES.PENDING_RESERVATION_REQUEST:
       return wrapHtml(`
-        <h2>New Reservation Request</h2>
-        <p>Hi ${data.adminName || 'Admin'},</p>
-        <p>A new reservation request has been submitted and requires your attention:</p>
+        <h2>Yeni Rezervasyon Talebi</h2>
+        <p>Merhaba ${data.adminName || 'Admin'},</p>
+        <p>Yeni bir rezervasyon talebi gönderildi ve incelemenizi bekliyor:</p>
         <div style="background-color: #f8f9fa; border-left: 4px solid #4F46E5; padding: 15px; margin: 20px 0;">
-          <h3 style="margin-top: 0; color: #2d3748;">Request Details</h3>
+          <h3 style="margin-top: 0; color: #2d3748;">Talep Detayları</h3>
           <ul style="list-style: none; padding: 0; margin: 0;">
-            <li style="margin-bottom: 8px;"><strong>Customer:</strong> ${data.customerName}</li>
-            <li style="margin-bottom: 8px;"><strong>Email:</strong> ${data.customerEmail}</li>
-            ${data.customerPhone ? `<li style="margin-bottom: 8px;"><strong>Phone:</strong> ${data.customerPhone}</li>` : ''}
-            <li style="margin-bottom: 8px;"><strong>Service:</strong> ${data.serviceName}</li>
-            ${data.variantName ? `<li style="margin-bottom: 8px;"><strong>Variant:</strong> ${data.variantName}</li>` : ''}
-            <li style="margin-bottom: 8px;"><strong>Date:</strong> ${data.date}</li>
-            <li style="margin-bottom: 8px;"><strong>Time:</strong> ${data.time}</li>
-            <li style="margin-bottom: 8px;"><strong>Duration:</strong> ${data.duration} minutes</li>
-            ${data.notes ? `<li style="margin-bottom: 8px;"><strong>Notes:</strong> ${data.notes}</li>` : ''}
+            <li style="margin-bottom: 8px;"><strong>Müşteri:</strong> ${data.customerName}</li>
+            <li style="margin-bottom: 8px;"><strong>E-posta:</strong> ${data.customerEmail}</li>
+            ${data.customerPhone ? `<li style="margin-bottom: 8px;"><strong>Telefon:</strong> ${data.customerPhone}</li>` : ''}
+            <li style="margin-bottom: 8px;"><strong>Hizmet:</strong> ${data.serviceName}</li>
+            ${data.variantName ? `<li style="margin-bottom: 8px;"><strong>Seçenek:</strong> ${data.variantName}</li>` : ''}
+            <li style="margin-bottom: 8px;"><strong>Tarih:</strong> ${data.date}</li>
+            <li style="margin-bottom: 8px;"><strong>Saat:</strong> ${data.time}</li>
+            <li style="margin-bottom: 8px;"><strong>Süre:</strong> ${data.duration} dakika</li>
+            ${data.notes ? `<li style="margin-bottom: 8px;"><strong>Notlar:</strong> ${data.notes}</li>` : ''}
           </ul>
         </div>
-        <p>Please review and approve or reject this request.</p>
-        ${data.dashboardUrl ? `<a href="${data.dashboardUrl}" class="button">View in Dashboard</a>` : ''}
+        <p>Lütfen bu talebi inceleyip onaylayın veya reddedin.</p>
+        ${data.dashboardUrl ? `<a href="${data.dashboardUrl}" class="button">Panelde Görüntüle</a>` : ''}
       `);
 
     case EMAIL_TEMPLATES.RESERVATION_APPROVED:
       return wrapHtml(`
-        <h2>Reservation Approved! 🎉</h2>
-        <p>Hi ${data.firstName},</p>
-        <p>Great news! Your reservation request has been approved.</p>
+        <h2>Rezervasyonunuz Onaylandı! 🎉</h2>
+        <p>Merhaba ${data.firstName},</p>
+        <p>Harika haber! Rezervasyon talebiniz onaylandı.</p>
         <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0;">
-          <h3 style="margin-top: 0; color: #155724;">Reservation Details</h3>
+          <h3 style="margin-top: 0; color: #155724;">Rezervasyon Detayları</h3>
           <ul style="list-style: none; padding: 0; margin: 0;">
-            <li style="margin-bottom: 8px;"><strong>Service:</strong> ${data.serviceName}</li>
-            ${data.variantName ? `<li style="margin-bottom: 8px;"><strong>Variant:</strong> ${data.variantName}</li>` : ''}
-            <li style="margin-bottom: 8px;"><strong>Date:</strong> ${data.date}</li>
-            <li style="margin-bottom: 8px;"><strong>Time:</strong> ${data.time}</li>
-            <li style="margin-bottom: 8px;"><strong>Duration:</strong> ${data.duration} minutes</li>
-            ${data.providerName ? `<li style="margin-bottom: 8px;"><strong>Provider:</strong> ${data.providerName}</li>` : ''}
+            <li style="margin-bottom: 8px;"><strong>Hizmet:</strong> ${data.serviceName}</li>
+            ${data.variantName ? `<li style="margin-bottom: 8px;"><strong>Seçenek:</strong> ${data.variantName}</li>` : ''}
+            <li style="margin-bottom: 8px;"><strong>Tarih:</strong> ${data.date}</li>
+            <li style="margin-bottom: 8px;"><strong>Saat:</strong> ${data.time}</li>
+            <li style="margin-bottom: 8px;"><strong>Süre:</strong> ${data.duration} dakika</li>
+            ${data.providerName ? `<li style="margin-bottom: 8px;"><strong>Hizmet Veren:</strong> ${data.providerName}</li>` : ''}
           </ul>
         </div>
-        <p>We look forward to seeing you!</p>
-        <p>If you need to make any changes, please contact us.</p>
+        <p>Sizi görmek için sabırsızlanıyoruz!</p>
+        <p>Herhangi bir değişiklik yapmanız gerekirse lütfen bizimle iletişime geçin.</p>
       `);
 
     case EMAIL_TEMPLATES.RESERVATION_REJECTED:
       return wrapHtml(`
-        <h2>Reservation Request Update</h2>
-        <p>Hi ${data.firstName},</p>
-        <p>We regret to inform you that your reservation request could not be approved at this time.</p>
+        <h2>Rezervasyon Talebi Güncellemesi</h2>
+        <p>Merhaba ${data.firstName},</p>
+        <p>Üzgünüz, rezervasyon talebiniz şu anda onaylanamadı.</p>
         <div style="background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0;">
-          <h3 style="margin-top: 0; color: #721c24;">Request Details</h3>
+          <h3 style="margin-top: 0; color: #721c24;">Talep Detayları</h3>
           <ul style="list-style: none; padding: 0; margin: 0;">
-            <li style="margin-bottom: 8px;"><strong>Service:</strong> ${data.serviceName}</li>
-            ${data.variantName ? `<li style="margin-bottom: 8px;"><strong>Variant:</strong> ${data.variantName}</li>` : ''}
-            <li style="margin-bottom: 8px;"><strong>Date:</strong> ${data.date}</li>
-            <li style="margin-bottom: 8px;"><strong>Time:</strong> ${data.time}</li>
+            <li style="margin-bottom: 8px;"><strong>Hizmet:</strong> ${data.serviceName}</li>
+            ${data.variantName ? `<li style="margin-bottom: 8px;"><strong>Seçenek:</strong> ${data.variantName}</li>` : ''}
+            <li style="margin-bottom: 8px;"><strong>Tarih:</strong> ${data.date}</li>
+            <li style="margin-bottom: 8px;"><strong>Saat:</strong> ${data.time}</li>
           </ul>
-          ${data.reason ? `<p style="margin-top: 15px;"><strong>Reason:</strong> ${data.reason}</p>` : ''}
+          ${data.reason ? `<p style="margin-top: 15px;"><strong>Sebep:</strong> ${data.reason}</p>` : ''}
         </div>
-        <p>We apologize for any inconvenience. Please feel free to submit a new reservation request for a different time.</p>
-        ${data.bookingUrl ? `<a href="${data.bookingUrl}" class="button">Book Another Appointment</a>` : ''}
+        <p>Verdiğimiz rahatsızlık için özür dileriz. Farklı bir zaman için yeni bir rezervasyon talebi gönderebilirsiniz.</p>
+        ${data.bookingUrl ? `<a href="${data.bookingUrl}" class="button">Yeni Randevu Al</a>` : ''}
       `);
 
     default:
@@ -230,13 +230,13 @@ function generateTextFromTemplate(templateName, data) {
       return `Reservation Cancelled\n\nHi ${data.firstName},\n\nYour reservation has been cancelled:\n- Service: ${data.serviceName}\n- Date: ${data.date}\n- Time: ${data.time}\n${data.reason ? `\nReason: ${data.reason}` : ''}\n\nIf you'd like to book another appointment, please visit our website.`;
 
     case EMAIL_TEMPLATES.PENDING_RESERVATION_REQUEST:
-      return `New Reservation Request\n\nHi ${data.adminName || 'Admin'},\n\nA new reservation request has been submitted and requires your attention:\n\nRequest Details:\n- Customer: ${data.customerName}\n- Email: ${data.customerEmail}\n${data.customerPhone ? `- Phone: ${data.customerPhone}\n` : ''}- Service: ${data.serviceName}\n${data.variantName ? `- Variant: ${data.variantName}\n` : ''}- Date: ${data.date}\n- Time: ${data.time}\n- Duration: ${data.duration} minutes\n${data.notes ? `- Notes: ${data.notes}\n` : ''}\nPlease review and approve or reject this request.${data.dashboardUrl ? `\n\nView in Dashboard: ${data.dashboardUrl}` : ''}`;
+      return `Yeni Rezervasyon Talebi\n\nMerhaba ${data.adminName || 'Admin'},\n\nYeni bir rezervasyon talebi gönderildi ve incelemenizi bekliyor:\n\nTalep Detayları:\n- Müşteri: ${data.customerName}\n- E-posta: ${data.customerEmail}\n${data.customerPhone ? `- Telefon: ${data.customerPhone}\n` : ''}- Hizmet: ${data.serviceName}\n${data.variantName ? `- Seçenek: ${data.variantName}\n` : ''}- Tarih: ${data.date}\n- Saat: ${data.time}\n- Süre: ${data.duration} dakika\n${data.notes ? `- Notlar: ${data.notes}\n` : ''}\nLütfen bu talebi inceleyip onaylayın veya reddedin.${data.dashboardUrl ? `\n\nPanelde Görüntüle: ${data.dashboardUrl}` : ''}`;
 
     case EMAIL_TEMPLATES.RESERVATION_APPROVED:
-      return `Reservation Approved!\n\nHi ${data.firstName},\n\nGreat news! Your reservation request has been approved.\n\nReservation Details:\n- Service: ${data.serviceName}\n${data.variantName ? `- Variant: ${data.variantName}\n` : ''}- Date: ${data.date}\n- Time: ${data.time}\n- Duration: ${data.duration} minutes\n${data.providerName ? `- Provider: ${data.providerName}\n` : ''}\nWe look forward to seeing you!\n\nIf you need to make any changes, please contact us.`;
+      return `Rezervasyonunuz Onaylandı!\n\nMerhaba ${data.firstName},\n\nHarika haber! Rezervasyon talebiniz onaylandı.\n\nRezervasyon Detayları:\n- Hizmet: ${data.serviceName}\n${data.variantName ? `- Seçenek: ${data.variantName}\n` : ''}- Tarih: ${data.date}\n- Saat: ${data.time}\n- Süre: ${data.duration} dakika\n${data.providerName ? `- Hizmet Veren: ${data.providerName}\n` : ''}\nSizi görmek için sabırsızlanıyoruz!\n\nHerhangi bir değişiklik yapmanız gerekirse lütfen bizimle iletişime geçin.`;
 
     case EMAIL_TEMPLATES.RESERVATION_REJECTED:
-      return `Reservation Request Update\n\nHi ${data.firstName},\n\nWe regret to inform you that your reservation request could not be approved at this time.\n\nRequest Details:\n- Service: ${data.serviceName}\n${data.variantName ? `- Variant: ${data.variantName}\n` : ''}- Date: ${data.date}\n- Time: ${data.time}\n${data.reason ? `\nReason: ${data.reason}\n` : ''}\nWe apologize for any inconvenience. Please feel free to submit a new reservation request for a different time.${data.bookingUrl ? `\n\nBook Another Appointment: ${data.bookingUrl}` : ''}`;
+      return `Rezervasyon Talebi Güncellemesi\n\nMerhaba ${data.firstName},\n\nÜzgünüz, rezervasyon talebiniz şu anda onaylanamadı.\n\nTalep Detayları:\n- Hizmet: ${data.serviceName}\n${data.variantName ? `- Seçenek: ${data.variantName}\n` : ''}- Tarih: ${data.date}\n- Saat: ${data.time}\n${data.reason ? `\nSebep: ${data.reason}\n` : ''}\nVerdiğimiz rahatsızlık için özür dileriz. Farklı bir zaman için yeni bir rezervasyon talebi gönderebilirsiniz.${data.bookingUrl ? `\n\nYeni Randevu Al: ${data.bookingUrl}` : ''}`;
 
     default:
       return data.text || '';
@@ -593,15 +593,15 @@ async function notifyAdminsOfPendingReservation(reservation, customer) {
       return [];
     }
 
-    // Format date and time for display
+    // Format date and time for display (Turkish locale)
     const startDate = new Date(reservation.start_time);
     const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const timeOptions = { hour: '2-digit', minute: '2-digit' };
-    const formattedDate = startDate.toLocaleDateString('en-US', dateOptions);
-    const formattedTime = startDate.toLocaleTimeString('en-US', timeOptions);
+    const formattedDate = startDate.toLocaleDateString('tr-TR', dateOptions);
+    const formattedTime = startDate.toLocaleTimeString('tr-TR', timeOptions);
 
     // Extract service and variant names from the reservation
-    const serviceName = reservation.variant?.service?.name || 'Unknown Service';
+    const serviceName = reservation.variant?.service?.name || 'Bilinmeyen Hizmet';
     const variantName = reservation.variant?.name || null;
     const duration = reservation.variant?.duration_minutes || 0;
 
@@ -611,8 +611,8 @@ async function notifyAdminsOfPendingReservation(reservation, customer) {
       : null;
 
     // Customer info
-    const customerName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Unknown Customer';
-    const customerEmail = customer.email || 'No email provided';
+    const customerName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Bilinmeyen Müşteri';
+    const customerEmail = customer.email || 'E-posta belirtilmemiş';
     const customerPhone = customer.phone_number || null;
 
     // Send email to each admin
@@ -623,7 +623,7 @@ async function notifyAdminsOfPendingReservation(reservation, customer) {
       try {
         return await sendTemplateEmail({
           to: adminPlain.email,
-          subject: `New Reservation Request from ${customerName}`,
+          subject: `${customerName} tarafından Yeni Rezervasyon Talebi`,
           template: EMAIL_TEMPLATES.PENDING_RESERVATION_REQUEST,
           data: {
             adminName,
@@ -668,15 +668,15 @@ async function notifyCustomerOfApprovedReservation(reservation, customer) {
       return null;
     }
 
-    // Format date and time for display
+    // Format date and time for display (Turkish locale)
     const startDate = new Date(reservation.start_time);
     const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const timeOptions = { hour: '2-digit', minute: '2-digit' };
-    const formattedDate = startDate.toLocaleDateString('en-US', dateOptions);
-    const formattedTime = startDate.toLocaleTimeString('en-US', timeOptions);
+    const formattedDate = startDate.toLocaleDateString('tr-TR', dateOptions);
+    const formattedTime = startDate.toLocaleTimeString('tr-TR', timeOptions);
 
     // Extract service and variant names from the reservation
-    const serviceName = reservation.variant?.service?.name || 'Unknown Service';
+    const serviceName = reservation.variant?.service?.name || 'Bilinmeyen Hizmet';
     const variantName = reservation.variant?.name || null;
     const duration = reservation.variant?.duration_minutes || 0;
 
@@ -687,7 +687,7 @@ async function notifyCustomerOfApprovedReservation(reservation, customer) {
 
     const result = await sendTemplateEmail({
       to: customer.email,
-      subject: 'Your Reservation Has Been Approved! 🎉',
+      subject: 'Rezervasyonunuz Onaylandı! 🎉',
       template: EMAIL_TEMPLATES.RESERVATION_APPROVED,
       data: {
         firstName: customer.first_name || 'Customer',
@@ -723,15 +723,15 @@ async function notifyCustomerOfRejectedReservation(reservation, customer, reason
       return null;
     }
 
-    // Format date and time for display
+    // Format date and time for display (Turkish locale)
     const startDate = new Date(reservation.start_time);
     const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const timeOptions = { hour: '2-digit', minute: '2-digit' };
-    const formattedDate = startDate.toLocaleDateString('en-US', dateOptions);
-    const formattedTime = startDate.toLocaleTimeString('en-US', timeOptions);
+    const formattedDate = startDate.toLocaleDateString('tr-TR', dateOptions);
+    const formattedTime = startDate.toLocaleTimeString('tr-TR', timeOptions);
 
     // Extract service and variant names from the reservation
-    const serviceName = reservation.variant?.service?.name || 'Unknown Service';
+    const serviceName = reservation.variant?.service?.name || 'Bilinmeyen Hizmet';
     const variantName = reservation.variant?.name || null;
 
     // Build booking URL using FRONTEND_URL environment variable
@@ -741,7 +741,7 @@ async function notifyCustomerOfRejectedReservation(reservation, customer, reason
 
     const result = await sendTemplateEmail({
       to: customer.email,
-      subject: 'Update on Your Reservation Request',
+      subject: 'Rezervasyon Talebiniz Hakkında',
       template: EMAIL_TEMPLATES.RESERVATION_REJECTED,
       data: {
         firstName: customer.first_name || 'Customer',

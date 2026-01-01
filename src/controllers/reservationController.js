@@ -866,7 +866,7 @@ async function approveReservation(req, res) {
 async function rejectReservation(req, res) {
   try {
     const { id } = req.params;
-    const { reason } = req.body;
+    const reason = req.body?.reason || null;
 
     // Fetch existing reservation
     const existingReservation = await reservationService.getReservationById(id);
