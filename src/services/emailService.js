@@ -22,6 +22,7 @@ const EMAIL_TEMPLATES = {
   RESERVATION_APPROVED: 'reservation_approved',
   RESERVATION_REJECTED: 'reservation_rejected',
   CONSULTING_REQUEST: 'consulting_request',
+  CONTACT_FORM: 'contact_form',
 };
 
 /**
@@ -215,6 +216,27 @@ function generateHtmlFromTemplate(templateName, data) {
         </div>
       `);
 
+    case EMAIL_TEMPLATES.CONTACT_FORM:
+      return wrapHtml(`
+        <h2>Yeni İletişim Formu Mesajı</h2>
+        <p>Merhaba,</p>
+        <p>Web sitesi üzerinden yeni bir iletişim formu mesajı aldınız:</p>
+        <div style="background-color: #f8f9fa; border-left: 4px solid #4F46E5; padding: 15px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #2d3748;">Mesaj Detayları</h3>
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            <li style="margin-bottom: 8px;"><strong>Ad Soyad:</strong> ${data.name}</li>
+            <li style="margin-bottom: 8px;"><strong>E-posta:</strong> ${data.email}</li>
+            <li style="margin-bottom: 8px;"><strong>Konu:</strong> ${data.subject}</li>
+            <li style="margin-bottom: 8px;"><strong>Zaman:</strong> ${data.formattedTimestamp}</li>
+          </ul>
+          <div style="margin-top: 15px;">
+            <strong>Mesaj:</strong>
+            <p style="white-space: pre-wrap; margin-top: 5px;">${data.message}</p>
+          </div>
+        </div>
+        <p>Bu mesaja ${data.email} adresinden yanıt verebilirsiniz.</p>
+      `);
+
     default:
       // For custom HTML, return the data.html if provided
       return data.html || '';
@@ -258,6 +280,9 @@ function generateTextFromTemplate(templateName, data) {
 
     case EMAIL_TEMPLATES.CONSULTING_REQUEST:
       return `Yeni Danışmanlık Talebi\n\nAd Soyad: ${data.name}\nE-posta: ${data.email}\nİlgilenilen Alanlar: ${data.selectedAreas.join(', ')}\nZaman: ${data.formattedTimestamp}\n\nMesaj:\n${data.message}`;
+
+    case EMAIL_TEMPLATES.CONTACT_FORM:
+      return `Yeni İletişim Formu Mesajı\n\nAd Soyad: ${data.name}\nE-posta: ${data.email}\nKonu: ${data.subject}\nZaman: ${data.formattedTimestamp}\n\nMesaj:\n${data.message}`;
 
     default:
       return data.text || '';
@@ -830,6 +855,53 @@ async function notifyAdminOfConsultingRequest(request) {
   }
 }
 
+/**
+ * Notify admin about a new contact form submission
+ * @param {Object} submission - The contact submission object
+ * @returns {Promise<Object>} Email send result
+ */
+async function notifyAdminOfContactSubmission(submission) {
+  try {
+    const adminEmail = process.env.GO_BODY_MAIL_ADDRESS;
+    if (!adminEmail) {
+      console.warn('GO_BODY_MAIL_ADDRESS not set. Cannot send contact form notification.');
+      return null;
+    }
+
+    // Format timestamp for display (Turkish locale and timezone)
+    const timestamp = new Date(submission.created_at);
+    const formattedTimestamp = timestamp.toLocaleString('tr-TR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Istanbul'
+    });
+
+    const result = await sendTemplateEmail({
+      to: adminEmail,
+      subject: `İletişim Formu: ${submission.subject}`,
+      template: EMAIL_TEMPLATES.CONTACT_FORM,
+      data: {
+        name: submission.name,
+        email: submission.email,
+        subject: submission.subject,
+        message: submission.message,
+        formattedTimestamp,
+      },
+      replyTo: submission.email,
+    });
+
+    console.log(`Sent contact form notification to ${adminEmail}`);
+    return result;
+  } catch (error) {
+    console.error('Error notifying admin of contact submission:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   // Constants
   EMAIL_TEMPLATES,
@@ -854,5 +926,6 @@ module.exports = {
   notifyCustomerOfApprovedReservation,
   notifyCustomerOfRejectedReservation,
   notifyAdminOfConsultingRequest,
+  notifyAdminOfContactSubmission,
 };
 

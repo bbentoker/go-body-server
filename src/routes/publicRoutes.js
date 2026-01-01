@@ -7,6 +7,7 @@ const blogController = require('../controllers/blogController');
 const serviceController = require('../controllers/serviceController');
 const decisionTreeController = require('../controllers/decisionTreeController');
 const consultingController = require('../controllers/consultingController');
+const contactController = require('../controllers/contactController');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -49,6 +50,9 @@ router.get('/my-decision-tree-submissions', authenticateToken, decisionTreeContr
 
 // Consulting route (public)
 router.post('/consulting', consultingController.createRequest);
+
+// Contact form route (public)
+router.post('/contact', contactController.createSubmission);
 
 module.exports = router;
 
