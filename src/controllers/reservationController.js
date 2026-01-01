@@ -5,6 +5,9 @@ const userService = require('../services/userService');
 const providerService = require('../services/providerService');
 const { Op } = require('sequelize');
 
+// Default provider ID - the user with role_id 1
+const DEFAULT_PROVIDER_ID = 1;
+
 /**
  * Validates if the time is on the hour or half-hour (e.g., 9:00 or 9:30)
  */
@@ -98,20 +101,20 @@ async function hasOneHourGap(providerId, startTime, endTime, excludeReservationI
 function getCurrentWeekRange() {
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  
+
   // Calculate offset to get to Monday (if today is Sunday, go back 6 days)
   const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  
+
   // Get Monday of current week at 00:00:00
   const monday = new Date(now);
   monday.setDate(now.getDate() + mondayOffset);
   monday.setHours(0, 0, 0, 0);
-  
+
   // Get Sunday of current week at 23:59:59
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
-  
+
   return { start: monday, end: sunday };
 }
 
@@ -121,22 +124,22 @@ function getCurrentWeekRange() {
 async function getReservationsByDateRange(req, res) {
   try {
     const { start_date, end_date, provider_id, user_id, variant_id, service_id } = req.query;
-    
+
     let startDate, endDate;
-    
+
     if (start_date && end_date) {
       // Parse provided dates
       startDate = new Date(start_date);
       startDate.setHours(0, 0, 0, 0); // Start of day
-      
+
       endDate = new Date(end_date);
       endDate.setHours(23, 59, 59, 999); // End of day
-      
+
       // Validate dates
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return res.status(400).json({ error: 'Invalid date format' });
       }
-      
+
       if (startDate > endDate) {
         return res.status(400).json({ error: 'start_date must be before or equal to end_date' });
       }
@@ -146,26 +149,26 @@ async function getReservationsByDateRange(req, res) {
       startDate = weekRange.start;
       endDate = weekRange.end;
     }
-    
+
     // Build where clause
     const whereClause = {
       start_time: {
         [Op.between]: [startDate, endDate],
       },
     };
-    
+
     // Add optional filters
     if (provider_id) whereClause.provider_id = provider_id;
     if (user_id) whereClause.user_id = user_id;
     if (variant_id) whereClause.variant_id = variant_id;
     if (service_id) whereClause['$variant.service_id$'] = service_id;
-    
+
     const reservations = await reservationService.getReservations({
       where: whereClause,
       includeRelations: true,
       order: [['start_time', 'ASC']],
     });
-    
+
     // Fetch all services, variants, and users
     const services = await serviceService.getServices({
       includeVariants: true,
@@ -178,9 +181,9 @@ async function getReservationsByDateRange(req, res) {
       where: { is_active: true },
       order: [['service_id', 'ASC']],
     });
-    
+
     const allUsers = await userService.getUsers();
-    
+
     res.json({
       date_range: {
         start: startDate.toISOString(),
@@ -204,22 +207,22 @@ async function getReservationsByDateRange(req, res) {
 async function getPublicReservationsByDateRange(req, res) {
   try {
     const { start_date, end_date, provider_id, variant_id, service_id } = req.query;
-    
+
     let startDate, endDate;
-    
+
     if (start_date && end_date) {
       // Parse provided dates
       startDate = new Date(start_date);
       startDate.setHours(0, 0, 0, 0); // Start of day
-      
+
       endDate = new Date(end_date);
       endDate.setHours(23, 59, 59, 999); // End of day
-      
+
       // Validate dates
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return res.status(400).json({ error: 'Invalid date format' });
       }
-      
+
       if (startDate > endDate) {
         return res.status(400).json({ error: 'start_date must be before or equal to end_date' });
       }
@@ -229,7 +232,7 @@ async function getPublicReservationsByDateRange(req, res) {
       startDate = weekRange.start;
       endDate = weekRange.end;
     }
-    
+
     // Build where clause - only confirmed/completed reservations for public view
     const whereClause = {
       start_time: {
@@ -239,22 +242,22 @@ async function getPublicReservationsByDateRange(req, res) {
         [Op.in]: ['confirmed', 'completed'],
       },
     };
-    
+
     // Add optional filters
     if (provider_id) whereClause.provider_id = provider_id;
     if (variant_id) whereClause.variant_id = variant_id;
     if (service_id) whereClause['$variant.service_id$'] = service_id;
-    
+
     const reservations = await reservationService.getReservations({
       where: whereClause,
       includeRelations: true,
       order: [['start_time', 'ASC']],
     });
-    
+
     // Sanitize reservation data - remove sensitive information
     const sanitizedReservations = reservations.map(reservation => {
       const res = reservation.toJSON ? reservation.toJSON() : reservation;
-      
+
       return {
         reservation_id: res.reservation_id,
         provider_id: res.provider_id,
@@ -270,30 +273,30 @@ async function getPublicReservationsByDateRange(req, res) {
         } : null,
         variant: res.variant
           ? {
-              variant_id: res.variant.variant_id,
-              service_id: res.variant.service_id,
-              name: res.variant.name,
-              duration_minutes: res.variant.duration_minutes,
-              price: res.variant.price,
-              service: res.variant.service
-                ? {
-                    service_id: res.variant.service.service_id,
-                    name: res.variant.service.name,
-                    description: res.variant.service.description,
-                  }
-                : null,
-            }
+            variant_id: res.variant.variant_id,
+            service_id: res.variant.service_id,
+            name: res.variant.name,
+            duration_minutes: res.variant.duration_minutes,
+            price: res.variant.price,
+            service: res.variant.service
+              ? {
+                service_id: res.variant.service.service_id,
+                name: res.variant.service.name,
+                description: res.variant.service.description,
+              }
+              : null,
+          }
           : null,
       };
     });
-    
+
     // Fetch all active services with variants (public info)
     const allServices = await serviceService.getServices({
       includeVariants: true,
       where: { is_active: true },
       order: [['service_id', 'ASC']],
     });
-    
+
     // Sanitize services (remove any internal fields if needed)
     const sanitizedServices = allServices.map(service => {
       const s = service.toJSON ? service.toJSON() : service;
@@ -311,10 +314,10 @@ async function getPublicReservationsByDateRange(req, res) {
         })),
       };
     });
-    
+
     // Fetch all providers (public info)
     const allProviders = await providerService.getProviders();
-    
+
     // Sanitize providers (show only public information)
     const sanitizedProviders = allProviders.map(provider => {
       const p = provider.toJSON ? provider.toJSON() : provider;
@@ -330,7 +333,7 @@ async function getPublicReservationsByDateRange(req, res) {
         is_active: p.is_active,
       };
     });
-    
+
     res.json({
       date_range: {
         start: startDate.toISOString(),
@@ -708,18 +711,18 @@ async function deleteReservation(req, res) {
 async function getPendingReservations(req, res) {
   try {
     const { provider_id, user_id, variant_id, service_id, limit, offset } = req.query;
-    
+
     // Build where clause for pending reservations
     const whereClause = {
       status: 'pending',
     };
-    
+
     // Add optional filters
     if (provider_id) whereClause.provider_id = provider_id;
     if (user_id) whereClause.user_id = user_id;
     if (variant_id) whereClause.variant_id = variant_id;
     if (service_id) whereClause['$variant.service_id$'] = service_id;
-    
+
     // Get pending reservations
     const pendingReservations = await reservationService.getReservations({
       where: whereClause,
@@ -728,7 +731,7 @@ async function getPendingReservations(req, res) {
       offset: offset ? parseInt(offset) : undefined,
       order: [['start_time', 'ASC']],
     });
-    
+
     res.json({
       count: pendingReservations.length,
       reservations: pendingReservations,
@@ -746,12 +749,12 @@ async function getPendingReservations(req, res) {
 async function getPendingReservationsCount(req, res) {
   try {
     const { provider_id, variant_id, service_id } = req.query;
-    
+
     // Build where clause for pending reservations
     const whereClause = {
       status: 'pending',
     };
-    
+
     // Add provider filter if specified
     if (provider_id) {
       whereClause.provider_id = provider_id;
@@ -762,22 +765,22 @@ async function getPendingReservationsCount(req, res) {
     if (service_id) {
       whereClause['$variant.service_id$'] = service_id;
     }
-    
+
     // Get all pending reservations
     const pendingReservations = await reservationService.getReservations({
       where: whereClause,
       includeRelations: true,
       order: [['start_time', 'ASC']],
     });
-    
+
     // Calculate total count
     const totalCount = pendingReservations.length;
-    
+
     // Group counts by provider if no specific provider is requested
     let countsByProvider = [];
     if (!provider_id) {
       const providerCounts = {};
-      
+
       pendingReservations.forEach(reservation => {
         const pId = reservation.provider_id;
         if (!providerCounts[pId]) {
@@ -794,10 +797,10 @@ async function getPendingReservationsCount(req, res) {
         }
         providerCounts[pId].count++;
       });
-      
+
       countsByProvider = Object.values(providerCounts);
     }
-    
+
     res.json({
       total_count: totalCount,
       provider_id: provider_id ? parseInt(provider_id) : null,
@@ -825,8 +828,8 @@ async function approveReservation(req, res) {
 
     // Check if reservation is pending
     if (existingReservation.status !== 'pending') {
-      return res.status(400).json({ 
-        error: `Cannot approve reservation with status '${existingReservation.status}'. Only pending reservations can be approved.` 
+      return res.status(400).json({
+        error: `Cannot approve reservation with status '${existingReservation.status}'. Only pending reservations can be approved.`
       });
     }
 
@@ -866,8 +869,8 @@ async function rejectReservation(req, res) {
 
     // Check if reservation is pending
     if (existingReservation.status !== 'pending') {
-      return res.status(400).json({ 
-        error: `Cannot reject reservation with status '${existingReservation.status}'. Only pending reservations can be rejected.` 
+      return res.status(400).json({
+        error: `Cannot reject reservation with status '${existingReservation.status}'. Only pending reservations can be rejected.`
       });
     }
 
@@ -879,7 +882,7 @@ async function rejectReservation(req, res) {
     // Add rejection reason to notes if provided
     if (reason) {
       const rejectionNote = `[REJECTED] ${reason}`;
-      updateData.notes = existingReservation.notes 
+      updateData.notes = existingReservation.notes
         ? `${existingReservation.notes}\n${rejectionNote}`
         : rejectionNote;
     }
@@ -907,15 +910,18 @@ async function rejectReservation(req, res) {
  */
 async function createReservationRequest(req, res) {
   try {
-    const { provider_id, variant_id, start_time, notes, user_package_item_id } = req.body;
-    
+    const { service_id, variant_id, start_time, notes, user_package_item_id } = req.body;
+
     // Get user_id from authenticated user
     const user_id = req.user.id;
 
+    // Use the default provider (user with role_id 1)
+    const provider_id = DEFAULT_PROVIDER_ID;
+
     // Validate required fields
-    if (!provider_id || !variant_id || !start_time) {
+    if (!variant_id || !start_time) {
       return res.status(400).json({
-        error: 'Missing required fields: provider_id, variant_id, and start_time are required',
+        error: 'Missing required fields: variant_id and start_time are required',
       });
     }
 
