@@ -191,7 +191,7 @@ function generateHtmlFromTemplate(templateName, data) {
           ${data.reason ? `<p style="margin-top: 15px;"><strong>Sebep:</strong> ${data.reason}</p>` : ''}
         </div>
         <p>Verdiğimiz rahatsızlık için özür dileriz. Farklı bir zaman için yeni bir rezervasyon talebi gönderebilirsiniz.</p>
-        ${data.bookingUrl ? `<a href="${data.bookingUrl}" class="button">Yeni Randevu Al</a>` : ''}
+        ${data.bookingUrl ? `<a href="${data.bookingUrl}" style="display: inline-block; padding: 12px 30px; background-color: #4F46E5; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0;">Yeni Randevu Al</a>` : ''}
       `);
 
     default:
@@ -733,7 +733,7 @@ async function notifyCustomerOfRejectedReservation(reservation, customer, reason
 
     // Build booking URL using FRONTEND_URL environment variable
     const bookingUrl = process.env.FRONTEND_URL
-      ? `${process.env.FRONTEND_URL}/book`
+      ? `${process.env.FRONTEND_URL}/reservation-request`
       : null;
 
     const result = await sendTemplateEmail({
