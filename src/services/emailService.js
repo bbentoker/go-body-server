@@ -1,5 +1,5 @@
 const { Resend } = require('resend');
-const { Email, EmailEvent } = require('../models');
+const { Email, EmailEvent, User } = require('../models');
 
 // Initialize Resend client
 const resend = new Resend(process.env.RESEND_KEY);
@@ -18,6 +18,7 @@ const EMAIL_TEMPLATES = {
   RESERVATION_CONFIRMATION: 'reservation_confirmation',
   RESERVATION_REMINDER: 'reservation_reminder',
   RESERVATION_CANCELLED: 'reservation_cancelled',
+  PENDING_RESERVATION_REQUEST: 'pending_reservation_request',
 };
 
 /**
@@ -132,6 +133,29 @@ function generateHtmlFromTemplate(templateName, data) {
         <p>If you'd like to book another appointment, please visit our website.</p>
       `);
 
+    case EMAIL_TEMPLATES.PENDING_RESERVATION_REQUEST:
+      return wrapHtml(`
+        <h2>New Reservation Request</h2>
+        <p>Hi ${data.adminName || 'Admin'},</p>
+        <p>A new reservation request has been submitted and requires your attention:</p>
+        <div style="background-color: #f8f9fa; border-left: 4px solid #4F46E5; padding: 15px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #2d3748;">Request Details</h3>
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            <li style="margin-bottom: 8px;"><strong>Customer:</strong> ${data.customerName}</li>
+            <li style="margin-bottom: 8px;"><strong>Email:</strong> ${data.customerEmail}</li>
+            ${data.customerPhone ? `<li style="margin-bottom: 8px;"><strong>Phone:</strong> ${data.customerPhone}</li>` : ''}
+            <li style="margin-bottom: 8px;"><strong>Service:</strong> ${data.serviceName}</li>
+            ${data.variantName ? `<li style="margin-bottom: 8px;"><strong>Variant:</strong> ${data.variantName}</li>` : ''}
+            <li style="margin-bottom: 8px;"><strong>Date:</strong> ${data.date}</li>
+            <li style="margin-bottom: 8px;"><strong>Time:</strong> ${data.time}</li>
+            <li style="margin-bottom: 8px;"><strong>Duration:</strong> ${data.duration} minutes</li>
+            ${data.notes ? `<li style="margin-bottom: 8px;"><strong>Notes:</strong> ${data.notes}</li>` : ''}
+          </ul>
+        </div>
+        <p>Please review and approve or reject this request.</p>
+        ${data.dashboardUrl ? `<a href="${data.dashboardUrl}" class="button">View in Dashboard</a>` : ''}
+      `);
+
     default:
       // For custom HTML, return the data.html if provided
       return data.html || '';
@@ -163,6 +187,9 @@ function generateTextFromTemplate(templateName, data) {
 
     case EMAIL_TEMPLATES.RESERVATION_CANCELLED:
       return `Reservation Cancelled\n\nHi ${data.firstName},\n\nYour reservation has been cancelled:\n- Service: ${data.serviceName}\n- Date: ${data.date}\n- Time: ${data.time}\n${data.reason ? `\nReason: ${data.reason}` : ''}\n\nIf you'd like to book another appointment, please visit our website.`;
+
+    case EMAIL_TEMPLATES.PENDING_RESERVATION_REQUEST:
+      return `New Reservation Request\n\nHi ${data.adminName || 'Admin'},\n\nA new reservation request has been submitted and requires your attention:\n\nRequest Details:\n- Customer: ${data.customerName}\n- Email: ${data.customerEmail}\n${data.customerPhone ? `- Phone: ${data.customerPhone}\n` : ''}- Service: ${data.serviceName}\n${data.variantName ? `- Variant: ${data.variantName}\n` : ''}- Date: ${data.date}\n- Time: ${data.time}\n- Duration: ${data.duration} minutes\n${data.notes ? `- Notes: ${data.notes}\n` : ''}\nPlease review and approve or reject this request.${data.dashboardUrl ? `\n\nView in Dashboard: ${data.dashboardUrl}` : ''}`;
 
     default:
       return data.text || '';
@@ -406,7 +433,7 @@ async function processWebhookEvent(payload) {
  */
 async function getEmailById(emailId, options = {}) {
   const include = options.includeEvents ? [{ model: EmailEvent, as: 'events' }] : [];
-  
+
   const email = await Email.findByPk(emailId, { include });
   return email ? email.get({ plain: true }) : null;
 }
@@ -420,7 +447,7 @@ async function getEmailById(emailId, options = {}) {
  */
 async function getEmailByResendId(resendId, options = {}) {
   const include = options.includeEvents ? [{ model: EmailEvent, as: 'events' }] : [];
-  
+
   const email = await Email.findOne({
     where: { resend_id: resendId },
     include,
@@ -469,7 +496,7 @@ async function getEventsByEmailId(emailId) {
  */
 async function getEmailStats(options = {}) {
   const { Op } = require('sequelize');
-  
+
   const where = {};
   if (options.startDate || options.endDate) {
     where.created_at = {};
@@ -478,7 +505,7 @@ async function getEmailStats(options = {}) {
   }
 
   const emails = await Email.findAll({ where });
-  
+
   const stats = {
     total: emails.length,
     pending: 0,
@@ -500,23 +527,107 @@ async function getEmailStats(options = {}) {
   return stats;
 }
 
+/**
+ * Notify users with role_id 1 about a new pending reservation request
+ * @param {Object} reservation - The reservation object with relations
+ * @param {Object} customer - The customer who made the request
+ * @returns {Promise<Object[]>} Array of email send results
+ */
+async function notifyAdminsOfPendingReservation(reservation, customer) {
+  try {
+    // Get all users with role_id 1 (admins)
+    const adminUsers = await User.findAll({
+      where: { role_id: 1 },
+      attributes: ['user_id', 'email', 'first_name', 'last_name'],
+    });
+
+    if (adminUsers.length === 0) {
+      console.log('No admin users found with role_id 1 to notify');
+      return [];
+    }
+
+    // Format date and time for display
+    const startDate = new Date(reservation.start_time);
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const timeOptions = { hour: '2-digit', minute: '2-digit' };
+    const formattedDate = startDate.toLocaleDateString('en-US', dateOptions);
+    const formattedTime = startDate.toLocaleTimeString('en-US', timeOptions);
+
+    // Extract service and variant names from the reservation
+    const serviceName = reservation.variant?.service?.name || 'Unknown Service';
+    const variantName = reservation.variant?.name || null;
+    const duration = reservation.variant?.duration_minutes || 0;
+
+    // Build dashboard URL using FRONTEND_URL environment variable
+    const dashboardUrl = process.env.FRONTEND_URL
+      ? `${process.env.FRONTEND_URL}/admin/reservations/pending`
+      : null;
+
+    // Customer info
+    const customerName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Unknown Customer';
+    const customerEmail = customer.email || 'No email provided';
+    const customerPhone = customer.phone_number || null;
+
+    // Send email to each admin
+    const emailPromises = adminUsers.map(async (admin) => {
+      const adminPlain = admin.get({ plain: true });
+      const adminName = `${adminPlain.first_name || ''} ${adminPlain.last_name || ''}`.trim() || 'Admin';
+
+      try {
+        return await sendTemplateEmail({
+          to: adminPlain.email,
+          subject: `New Reservation Request from ${customerName}`,
+          template: EMAIL_TEMPLATES.PENDING_RESERVATION_REQUEST,
+          data: {
+            adminName,
+            customerName,
+            customerEmail,
+            customerPhone,
+            serviceName,
+            variantName,
+            date: formattedDate,
+            time: formattedTime,
+            duration,
+            notes: reservation.notes || null,
+            dashboardUrl,
+          },
+          userId: adminPlain.user_id,
+        });
+      } catch (emailError) {
+        console.error(`Failed to send pending reservation notification to ${adminPlain.email}:`, emailError);
+        return { error: emailError.message, email: adminPlain.email };
+      }
+    });
+
+    const results = await Promise.all(emailPromises);
+    console.log(`Sent pending reservation notifications to ${results.filter(r => !r.error).length} admin(s)`);
+    return results;
+  } catch (error) {
+    console.error('Error notifying admins of pending reservation:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   // Constants
   EMAIL_TEMPLATES,
   DEFAULT_FROM,
-  
+
   // Core sending functions
   sendEmail,
   sendTemplateEmail,
-  
+
   // Webhook processing
   processWebhookEvent,
-  
+
   // Query functions
   getEmailById,
   getEmailByResendId,
   getEmailsByUserId,
   getEventsByEmailId,
   getEmailStats,
+
+  // Admin notification
+  notifyAdminsOfPendingReservation,
 };
 

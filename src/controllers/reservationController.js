@@ -3,6 +3,7 @@ const serviceService = require('../services/serviceService');
 const serviceVariantService = require('../services/serviceVariantService');
 const userService = require('../services/userService');
 const providerService = require('../services/providerService');
+const emailService = require('../services/emailService');
 const { Op } = require('sequelize');
 
 // Default provider ID - the user with role_id 1
@@ -50,9 +51,7 @@ async function hasOneHourGap(providerId, startTime, endTime, excludeReservationI
 
   const whereClause = {
     provider_id: providerId,
-    status: {
-      [Op.notIn]: ['cancelled', 'no_show'],
-    },
+    status: 'confirmed',
     [Op.or]: [
       {
         // Reservation before ours that's too close
@@ -997,6 +996,15 @@ async function createReservationRequest(req, res) {
       reservation.reservation_id,
       { includeRelations: true }
     );
+
+    // Notify admins (users with role_id 1) about the new pending reservation
+    // Get customer info for the email
+    const customer = await userService.getUserById(user_id);
+    if (customer) {
+      // Send notification asynchronously - don't block the response
+      emailService.notifyAdminsOfPendingReservation(completeReservation, customer)
+        .catch(err => console.error('Failed to notify admins of pending reservation:', err));
+    }
 
     res.status(201).json(completeReservation);
   } catch (error) {
