@@ -18,20 +18,44 @@ function isValidTimeSlot(date) {
 }
 
 /**
- * Validates if the reservation time is within business hours (9 AM - 9 PM)
+ * Converts a UTC Date to Turkish local time (Europe/Istanbul, UTC+3)
+ * Returns an object with hour and minutes in Turkish time
+ */
+function toTurkishTime(utcDate) {
+  // Create a formatter for Turkish timezone
+  const formatter = new Intl.DateTimeFormat('tr-TR', {
+    timeZone: 'Europe/Istanbul',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(utcDate);
+  const hour = parseInt(parts.find(p => p.type === 'hour').value, 10);
+  const minute = parseInt(parts.find(p => p.type === 'minute').value, 10);
+
+  return { hour, minute };
+}
+
+/**
+ * Validates if the reservation time is within business hours (9 AM - 9 PM Turkish time)
  */
 function isWithinBusinessHours(startTime, endTime) {
-  const startHour = startTime.getHours();
-  const startMinutes = startTime.getMinutes();
-  const endHour = endTime.getHours();
-  const endMinutes = endTime.getMinutes();
+  // Convert to Turkish local time for business hours validation
+  const startTR = toTurkishTime(startTime);
+  const endTR = toTurkishTime(endTime);
 
-  // Check if start time is at or after 9:00 AM
+  const startHour = startTR.hour;
+  const startMinutes = startTR.minute;
+  const endHour = endTR.hour;
+  const endMinutes = endTR.minute;
+
+  // Check if start time is at or after 9:00 AM Turkish time
   if (startHour < 9) {
     return { valid: false, message: 'Reservations must start at 9:00 AM or later' };
   }
 
-  // Check if end time is at or before 9:00 PM (21:00)
+  // Check if end time is at or before 9:00 PM (21:00) Turkish time
   if (endHour > 21 || (endHour === 21 && endMinutes > 0)) {
     return { valid: false, message: 'Reservations must end by 9:00 PM' };
   }
