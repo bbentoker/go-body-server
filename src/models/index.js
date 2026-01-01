@@ -19,6 +19,7 @@ const EmailEventModel = require('./emailEvent');
 const PasswordResetTokenModel = require('./passwordResetToken');
 const DecisionTreeModel = require('./decisionTree');
 const DecisionTreeSubmissionModel = require('./decisionTreeSubmission');
+const ConsultingRequestModel = require('./consultingRequest');
 
 const User = UserModel(sequelize);
 const Role = RoleModel(sequelize);
@@ -39,6 +40,7 @@ const EmailEvent = EmailEventModel(sequelize);
 const PasswordResetToken = PasswordResetTokenModel(sequelize);
 const DecisionTree = DecisionTreeModel(sequelize);
 const DecisionTreeSubmission = DecisionTreeSubmissionModel(sequelize);
+const ConsultingRequest = ConsultingRequestModel(sequelize);
 
 User.hasMany(Reservation, {
   foreignKey: 'user_id',
@@ -264,4 +266,5 @@ module.exports = {
   PasswordResetToken,
   DecisionTree,
   DecisionTreeSubmission,
+  ConsultingRequest,
 };

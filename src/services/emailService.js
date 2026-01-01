@@ -21,6 +21,7 @@ const EMAIL_TEMPLATES = {
   PENDING_RESERVATION_REQUEST: 'pending_reservation_request',
   RESERVATION_APPROVED: 'reservation_approved',
   RESERVATION_REJECTED: 'reservation_rejected',
+  CONSULTING_REQUEST: 'consulting_request',
 };
 
 /**
@@ -194,6 +195,26 @@ function generateHtmlFromTemplate(templateName, data) {
         ${data.bookingUrl ? `<a href="${data.bookingUrl}" style="display: inline-block; padding: 12px 30px; background-color: #4F46E5; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0;">Yeni Randevu Al</a>` : ''}
       `);
 
+    case EMAIL_TEMPLATES.CONSULTING_REQUEST:
+      return wrapHtml(`
+        <h2>Yeni Danışmanlık Talebi</h2>
+        <p>Merhaba,</p>
+        <p>Aşağıdaki bilgilerle yeni bir danışmanlık talebi alındı:</p>
+        <div style="background-color: #f8f9fa; border-left: 4px solid #4F46E5; padding: 15px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #2d3748;">Talep Detayları</h3>
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            <li style="margin-bottom: 8px;"><strong>Ad Soyad:</strong> ${data.name}</li>
+            <li style="margin-bottom: 8px;"><strong>E-posta:</strong> ${data.email}</li>
+            <li style="margin-bottom: 8px;"><strong>İlgilenilen Alanlar:</strong> ${data.selectedAreas.join(', ')}</li>
+            <li style="margin-bottom: 8px;"><strong>Zaman:</strong> ${data.formattedTimestamp}</li>
+          </ul>
+          <div style="margin-top: 15px;">
+            <strong>Mesaj:</strong>
+            <p style="white-space: pre-wrap; margin-top: 5px;">${data.message}</p>
+          </div>
+        </div>
+      `);
+
     default:
       // For custom HTML, return the data.html if provided
       return data.html || '';
@@ -234,6 +255,9 @@ function generateTextFromTemplate(templateName, data) {
 
     case EMAIL_TEMPLATES.RESERVATION_REJECTED:
       return `Rezervasyon Talebi Güncellemesi\n\nMerhaba ${data.firstName},\n\nÜzgünüz, rezervasyon talebiniz şu anda onaylanamadı.\n\nTalep Detayları:\n- Hizmet: ${data.serviceName}\n- Tarih: ${data.date}\n- Saat: ${data.time}\n${data.reason ? `\nSebep: ${data.reason}\n` : ''}\nVerdiğimiz rahatsızlık için özür dileriz. Farklı bir zaman için yeni bir rezervasyon talebi gönderebilirsiniz.${data.bookingUrl ? `\n\nYeni Randevu Al: ${data.bookingUrl}` : ''}`;
+
+    case EMAIL_TEMPLATES.CONSULTING_REQUEST:
+      return `Yeni Danışmanlık Talebi\n\nAd Soyad: ${data.name}\nE-posta: ${data.email}\nİlgilenilen Alanlar: ${data.selectedAreas.join(', ')}\nZaman: ${data.formattedTimestamp}\n\nMesaj:\n${data.message}`;
 
     default:
       return data.text || '';
@@ -760,6 +784,52 @@ async function notifyCustomerOfRejectedReservation(reservation, customer, reason
   }
 }
 
+/**
+ * Notify admin about a new consulting request
+ * @param {Object} request - The consulting request object
+ * @returns {Promise<Object>} Email send result
+ */
+async function notifyAdminOfConsultingRequest(request) {
+  try {
+    const adminEmail = process.env.GO_BODY_MAIL_ADDRESS;
+    if (!adminEmail) {
+      console.warn('GO_BODY_MAIL_ADDRESS not set. Cannot send consulting request notification.');
+      return null;
+    }
+
+    // Format timestamp for display (Turkish locale and timezone)
+    const timestamp = new Date(request.request_timestamp);
+    const formattedTimestamp = timestamp.toLocaleString('tr-TR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Istanbul'
+    });
+
+    const result = await sendTemplateEmail({
+      to: adminEmail,
+      subject: `Yeni Danışmanlık Talebi: ${request.name}`,
+      template: EMAIL_TEMPLATES.CONSULTING_REQUEST,
+      data: {
+        name: request.name,
+        email: request.email,
+        selectedAreas: request.selected_areas,
+        message: request.message,
+        formattedTimestamp,
+      },
+    });
+
+    console.log(`Sent consulting request notification to ${adminEmail}`);
+    return result;
+  } catch (error) {
+    console.error('Error notifying admin of consulting request:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   // Constants
   EMAIL_TEMPLATES,
@@ -783,5 +853,6 @@ module.exports = {
   notifyAdminsOfPendingReservation,
   notifyCustomerOfApprovedReservation,
   notifyCustomerOfRejectedReservation,
+  notifyAdminOfConsultingRequest,
 };
 

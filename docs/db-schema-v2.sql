@@ -391,3 +391,14 @@ CREATE INDEX idx_decision_trees_created ON decision_trees(created_at);
 CREATE INDEX idx_decision_tree_submissions_tree ON decision_tree_submissions(tree_id);
 CREATE INDEX idx_decision_tree_submissions_user ON decision_tree_submissions(user_id);
 CREATE INDEX idx_decision_tree_submissions_submitted ON decision_tree_submissions(submitted_at);
+
+CREATE TABLE consulting_requests (
+  consulting_id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  selected_areas JSONB NOT NULL,
+  message TEXT NOT NULL,
+  request_timestamp TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
