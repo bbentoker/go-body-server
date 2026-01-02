@@ -21,6 +21,7 @@ const DecisionTreeModel = require('./decisionTree');
 const DecisionTreeSubmissionModel = require('./decisionTreeSubmission');
 const ConsultingRequestModel = require('./consultingRequest');
 const ContactSubmissionModel = require('./contactSubmission');
+const EmailVerificationTokenModel = require('./emailVerificationToken');
 
 const User = UserModel(sequelize);
 const Role = RoleModel(sequelize);
@@ -43,6 +44,7 @@ const DecisionTree = DecisionTreeModel(sequelize);
 const DecisionTreeSubmission = DecisionTreeSubmissionModel(sequelize);
 const ConsultingRequest = ConsultingRequestModel(sequelize);
 const ContactSubmission = ContactSubmissionModel(sequelize);
+const EmailVerificationToken = EmailVerificationTokenModel(sequelize);
 
 User.hasMany(Reservation, {
   foreignKey: 'user_id',
@@ -218,6 +220,16 @@ PasswordResetToken.belongsTo(User, {
   as: 'user',
 });
 
+// Email verification token associations
+User.hasMany(EmailVerificationToken, {
+  foreignKey: 'user_id',
+  as: 'emailVerificationTokens',
+});
+EmailVerificationToken.belongsTo(User, {
+  foreignKey: 'user_id',
+  as: 'user',
+});
+
 // Decision tree associations
 User.hasMany(DecisionTree, {
   foreignKey: 'created_by',
@@ -270,4 +282,5 @@ module.exports = {
   DecisionTreeSubmission,
   ConsultingRequest,
   ContactSubmission,
+  EmailVerificationToken,
 };

@@ -49,7 +49,7 @@ const loginAdminProvider = asyncHandler(async (req, res) => {
     description: 'Administrative role with elevated privileges',
     is_provider: true,
   });
-  
+
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });
@@ -62,7 +62,7 @@ const loginAdminProvider = asyncHandler(async (req, res) => {
   }
 
   const tokens = await authService.generateTokenPair(provider);
-  
+
   return res.json({
     user: provider,
     ...tokens,
@@ -89,7 +89,7 @@ const loginWorkerProvider = asyncHandler(async (req, res) => {
   }
 
   const tokens = await authService.generateTokenPair(provider);
-  
+
   return res.json({
     user: provider,
     ...tokens,
@@ -107,8 +107,8 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   if (!first_name || !last_name || !email || !password) {
-    return res.status(400).json({ 
-      message: 'First name, last name, email, and password are required' 
+    return res.status(400).json({
+      message: 'First name, last name, email, and password are required'
     });
   }
 
@@ -120,8 +120,8 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   if (password.length < 6) {
-    return res.status(400).json({ 
-      message: 'Password must be at least 6 characters long' 
+    return res.status(400).json({
+      message: 'Password must be at least 6 characters long'
     });
   }
 
@@ -150,15 +150,37 @@ const registerUser = asyncHandler(async (req, res) => {
   };
 
   const user = await userService.createUser(userData);
-  
+
   if (!user) {
     return res.status(500).json({ message: 'Failed to create user' });
   }
 
+  // Create email verification token and send verification email
+  try {
+    const verificationCode = await authService.createEmailVerificationToken(user.user_id);
+    const verificationUrl = authService.getEmailVerificationUrl(verificationCode);
+    const expiresIn = authService.getEmailVerificationExpiryString();
+
+    await emailService.sendTemplateEmail({
+      to: normalizedEmail,
+      subject: 'E-posta Adresinizi Doğrulayın - Go Body',
+      template: emailService.EMAIL_TEMPLATES.EMAIL_VERIFICATION,
+      data: {
+        firstName: user.first_name,
+        verificationUrl,
+        expiresIn,
+      },
+      userId: user.user_id,
+    });
+  } catch (emailError) {
+    console.error('Failed to send verification email:', emailError);
+    // Don't fail registration if email sending fails
+  }
+
   const tokens = await authService.generateTokenPair(user);
-  
+
   return res.status(201).json({
-    message: 'User registered successfully',
+    message: 'User registered successfully. Please check your email to verify your account.',
     user,
     ...tokens,
   });
@@ -176,7 +198,7 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   const tokens = await authService.generateTokenPair(user);
-  
+
   return res.json({
     user,
     ...tokens,
@@ -185,13 +207,13 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const refreshToken = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
-  
+
   if (!refreshToken) {
     return res.status(400).json({ message: 'Refresh token is required' });
   }
 
   const tokens = await authService.refreshAccessToken(refreshToken);
-  
+
   if (!tokens) {
     return res.status(401).json({ message: 'Invalid or expired refresh token' });
   }
@@ -201,12 +223,12 @@ const refreshToken = asyncHandler(async (req, res) => {
 
 const logout = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
-  
+
   if (!refreshToken) {
     return res.status(400).json({ message: 'Refresh token is required' });
   }
   const revoked = await authService.revokeRefreshToken(refreshToken);
-  
+
   if (!revoked) {
     return res.status(404).json({ message: 'Token not found or already revoked' });
   }
@@ -216,13 +238,13 @@ const logout = asyncHandler(async (req, res) => {
 
 const logoutAll = asyncHandler(async (req, res) => {
   const { userId } = req.body;
-  
+
   if (!userId) {
     return res.status(400).json({ message: 'userId is required' });
   }
-  
+
   await authService.revokeAllUserTokens(userId);
-  
+
   return res.json({ message: 'All sessions logged out successfully' });
 });
 
@@ -277,14 +299,14 @@ const requestPasswordReset = asyncHandler(async (req, res) => {
   }
 
   const normalizedEmail = email.toLowerCase().trim();
-  
+
   // Check if user exists
   const user = await userService.getUserByEmail(normalizedEmail);
-  
+
   if (!user) {
     // Return success even if user doesn't exist (security best practice)
-    return res.json({ 
-      message: 'If an account with that email exists, a password reset link has been sent.' 
+    return res.json({
+      message: 'If an account with that email exists, a password reset link has been sent.'
     });
   }
 
@@ -292,8 +314,8 @@ const requestPasswordReset = asyncHandler(async (req, res) => {
   const hasValidRequest = await authService.hasValidPasswordResetRequest(user.user_id);
   console.log('hasValidRequest', hasValidRequest);
   if (hasValidRequest) {
-    return res.status(429).json({ 
-      message: 'A password reset request is already pending. Please check your email or try again later.' 
+    return res.status(429).json({
+      message: 'A password reset request is already pending. Please check your email or try again later.'
     });
   }
 
@@ -320,8 +342,8 @@ const requestPasswordReset = asyncHandler(async (req, res) => {
     return res.status(500).json({ message: 'Failed to send password reset email. Please try again later.' });
   }
 
-  return res.json({ 
-    message: 'If an account with that email exists, a password reset link has been sent.' 
+  return res.json({
+    message: 'If an account with that email exists, a password reset link has been sent.'
   });
 });
 
@@ -362,6 +384,44 @@ const confirmPasswordReset = asyncHandler(async (req, res) => {
   return res.json({ message: 'Password has been reset successfully. Please log in with your new password.' });
 });
 
+/**
+ * Verify email address using verification code
+ */
+const verifyEmail = asyncHandler(async (req, res) => {
+  const { code } = req.body;
+
+  if (!code) {
+    return res.status(400).json({ message: 'Verification code is required' });
+  }
+
+  // Verify the code
+  const result = await authService.verifyEmailVerificationCode(code);
+  if (!result) {
+    return res.status(400).json({ message: 'Invalid or expired verification code' });
+  }
+
+  const { user, tokenId } = result;
+
+  // Check if already verified
+  if (user.is_verified) {
+    return res.json({ message: 'Email is already verified' });
+  }
+
+  // Update user's verified status
+  const updatedUser = await userService.verifyUserEmail(user.user_id);
+  if (!updatedUser) {
+    return res.status(500).json({ message: 'Failed to verify email' });
+  }
+
+  // Mark token as used
+  await authService.markEmailVerificationTokenAsUsed(tokenId);
+
+  return res.json({
+    message: 'Email verified successfully',
+    user: updatedUser,
+  });
+});
+
 module.exports = {
   registerUser,
   loginUser,
@@ -372,4 +432,5 @@ module.exports = {
   resetProviderPassword,
   requestPasswordReset,
   confirmPasswordReset,
+  verifyEmail,
 };

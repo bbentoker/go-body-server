@@ -52,13 +52,13 @@ async function prepareUserPayload(payload) {
     }
     delete userData.password;
   }
-  
+
   Object.keys(userData).forEach((key) => {
     if (typeof userData[key] === 'undefined') {
       delete userData[key];
     }
   });
-  
+
   return userData;
 }
 
@@ -154,7 +154,7 @@ async function getUserByPhoneNumber(phoneNumber, options = {}) {
     if (!phoneNumber) {
       return null;
     }
-    
+
     const user = await User.findOne({
       where: { phone_number: phoneNumber },
       include: options.includeReservations ? defaultUserInclude : [languageInclude, roleInclude],
@@ -219,6 +219,23 @@ async function resetUserPasswordByEmail(email, newPassword) {
   }
 }
 
+async function verifyUserEmail(userId) {
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return null;
+    }
+
+    await user.update({ is_verified: true });
+    await user.reload({ include: [languageInclude, roleInclude] });
+
+    return sanitizeUser(user);
+  } catch (error) {
+    console.error('Error in verifyUserEmail service:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   createUser,
   getUserById,
@@ -229,5 +246,6 @@ module.exports = {
   getUserByPhoneNumber,
   authenticateUser,
   resetUserPasswordByEmail,
+  verifyUserEmail,
 };
 

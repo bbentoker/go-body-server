@@ -13,6 +13,9 @@ router.post('/provider/reset-password', authController.resetProviderPassword);
 router.post('/password/request-reset', authController.requestPasswordReset);
 router.post('/password/confirm-reset', authController.confirmPasswordReset);
 
+// Email verification route
+router.post('/email/verify', authController.verifyEmail);
+
 // Token management routes
 router.post('/refresh', authController.refreshToken);
 router.post('/logout', authController.logout);

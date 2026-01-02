@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { RefreshToken, PasswordResetToken, User } = require('../models');
+const { RefreshToken, PasswordResetToken, EmailVerificationToken, User } = require('../models');
 
 const {
   JWT_ACCESS_SECRET = 'change_this_access_secret',
@@ -11,9 +11,11 @@ const {
 // Handle empty string environment variables with proper fallbacks
 const JWT_REFRESH_EXPIRY_DAYS = Number.parseInt(process.env.JWT_REFRESH_EXPIRY_DAYS, 10) || 7;
 const PASSWORD_RESET_EXPIRY_MINUTES = Number.parseInt(process.env.PASSWORD_RESET_EXPIRY_MINUTES, 10) || 60;
+const EMAIL_VERIFICATION_EXPIRY_HOURS = Number.parseInt(process.env.EMAIL_VERIFICATION_EXPIRY_HOURS, 10) || 24;
 
 const REFRESH_EXPIRY_MS = JWT_REFRESH_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_EXPIRY_MS = PASSWORD_RESET_EXPIRY_MINUTES * 60 * 1000;
+const EMAIL_VERIFICATION_EXPIRY_MS = EMAIL_VERIFICATION_EXPIRY_HOURS * 60 * 60 * 1000;
 
 // Simple JWT implementation without external dependencies
 function base64UrlEncode(str) {
@@ -39,21 +41,21 @@ function createSignature(header, payload, secret) {
 
 function generateJWT(payload, secret, expiresIn) {
   const header = base64UrlEncode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  
+
   const now = Math.floor(Date.now() / 1000);
   const exp = expiresIn.endsWith('m')
     ? now + Number.parseInt(expiresIn, 10) * 60
     : now + Number.parseInt(expiresIn, 10);
-  
+
   const jwtPayload = {
     ...payload,
     iat: now,
     exp,
   };
-  
+
   const encodedPayload = base64UrlEncode(JSON.stringify(jwtPayload));
   const signature = createSignature(header, encodedPayload, secret);
-  
+
   return `${header}.${encodedPayload}.${signature}`;
 }
 
@@ -63,21 +65,21 @@ function verifyJWT(token, secret) {
     if (parts.length !== 3) {
       return null;
     }
-    
+
     const [header, payload, signature] = parts;
     const expectedSignature = createSignature(header, payload, secret);
-    
+
     if (signature !== expectedSignature) {
       return null;
     }
-    
+
     const decodedPayload = JSON.parse(base64UrlDecode(payload));
-    
+
     const now = Math.floor(Date.now() / 1000);
     if (decodedPayload.exp && decodedPayload.exp < now) {
       return null;
     }
-    
+
     return decodedPayload;
   } catch (error) {
     return null;
@@ -105,14 +107,14 @@ async function generateTokenPair(user) {
       is_provider: Boolean(role.is_provider),
     },
   };
-  
+
   const accessToken = generateJWT(accessTokenPayload, JWT_ACCESS_SECRET, JWT_ACCESS_EXPIRY);
-  
+
   const refreshToken = generateRandomToken();
   const refreshTokenHash = hashToken(refreshToken);
-  
+
   const expiresAt = new Date(Date.now() + REFRESH_EXPIRY_MS);
-  
+
   try {
     await RefreshToken.create({
       token_hash: refreshTokenHash,
@@ -124,7 +126,7 @@ async function generateTokenPair(user) {
     console.error('Error details:', error.original || error);
     throw error;
   }
-  
+
   return {
     accessToken,
     refreshToken,
@@ -138,23 +140,23 @@ async function verifyAccessToken(token) {
 
 async function refreshAccessToken(refreshToken) {
   const tokenHash = hashToken(refreshToken);
-  
+
   const storedToken = await RefreshToken.findOne({
     where: {
       token_hash: tokenHash,
       revoked_at: null,
     },
   });
-  
+
   if (!storedToken) {
     return null;
   }
-  
+
   if (new Date() > new Date(storedToken.expires_at)) {
     await storedToken.update({ revoked_at: new Date() });
     return null;
   }
-  
+
   const { User, Role } = require('../models');
   const user = await User.findByPk(storedToken.user_id, {
     include: [
@@ -169,9 +171,9 @@ async function refreshAccessToken(refreshToken) {
     await storedToken.update({ revoked_at: new Date() });
     return null;
   }
-  
+
   await storedToken.update({ revoked_at: new Date() });
-  
+
   return generateTokenPair(user);
 }
 
@@ -185,11 +187,11 @@ async function revokeRefreshToken(refreshToken) {
       revoked_at: null,
     },
   });
-  
+
   if (!storedToken) {
     return false;
   }
-  
+
   await storedToken.update({ revoked_at: new Date() });
   return true;
 }
@@ -210,7 +212,7 @@ async function revokeAllUserTokens(userId) {
  */
 async function hasValidPasswordResetRequest(userId) {
   const { Op } = require('sequelize');
-  
+
   const existingToken = await PasswordResetToken.findOne({
     where: {
       user_id: userId,
@@ -218,7 +220,7 @@ async function hasValidPasswordResetRequest(userId) {
       expires_at: { [Op.gt]: new Date() },
     },
   });
-  
+
   return !!existingToken;
 }
 
@@ -231,13 +233,13 @@ async function createPasswordResetToken(userId) {
   const resetCode = generateRandomToken();
   const tokenHash = hashToken(resetCode);
   const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRY_MS);
-  
+
   await PasswordResetToken.create({
     token_hash: tokenHash,
     user_id: userId,
     expires_at: expiresAt,
   });
-  
+
   return resetCode;
 }
 
@@ -249,7 +251,7 @@ async function createPasswordResetToken(userId) {
 async function verifyPasswordResetCode(resetCode) {
   const { Op } = require('sequelize');
   const tokenHash = hashToken(resetCode);
-  
+
   const resetToken = await PasswordResetToken.findOne({
     where: {
       token_hash: tokenHash,
@@ -257,16 +259,16 @@ async function verifyPasswordResetCode(resetCode) {
       expires_at: { [Op.gt]: new Date() },
     },
   });
-  
+
   if (!resetToken) {
     return null;
   }
-  
+
   const user = await User.findByPk(resetToken.user_id);
   if (!user) {
     return null;
   }
-  
+
   return {
     user,
     tokenId: resetToken.token_id,
@@ -306,6 +308,94 @@ function getPasswordResetExpiryString() {
   return `${minutes} minute${minutes > 1 ? 's' : ''}`;
 }
 
+// ============================================
+// EMAIL VERIFICATION FUNCTIONS
+// ============================================
+
+/**
+ * Create an email verification token for a user
+ * @param {number} userId - User ID
+ * @returns {Promise<string>} The plain verification code (to be sent via email)
+ */
+async function createEmailVerificationToken(userId) {
+  const verificationCode = generateRandomToken();
+  const tokenHash = hashToken(verificationCode);
+  const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_EXPIRY_MS);
+
+  await EmailVerificationToken.create({
+    token_hash: tokenHash,
+    user_id: userId,
+    expires_at: expiresAt,
+  });
+
+  return verificationCode;
+}
+
+/**
+ * Verify an email verification code and return the user if valid
+ * @param {string} verificationCode - The verification code from the email
+ * @returns {Promise<Object|null>} User object and token ID if valid, null otherwise
+ */
+async function verifyEmailVerificationCode(verificationCode) {
+  const { Op } = require('sequelize');
+  const tokenHash = hashToken(verificationCode);
+
+  const verificationToken = await EmailVerificationToken.findOne({
+    where: {
+      token_hash: tokenHash,
+      used_at: null,
+      expires_at: { [Op.gt]: new Date() },
+    },
+  });
+
+  if (!verificationToken) {
+    return null;
+  }
+
+  const user = await User.findByPk(verificationToken.user_id);
+  if (!user) {
+    return null;
+  }
+
+  return {
+    user,
+    tokenId: verificationToken.token_id,
+  };
+}
+
+/**
+ * Mark an email verification token as used
+ * @param {number} tokenId - Token ID
+ */
+async function markEmailVerificationTokenAsUsed(tokenId) {
+  await EmailVerificationToken.update(
+    { used_at: new Date() },
+    { where: { token_id: tokenId } }
+  );
+}
+
+/**
+ * Get the frontend URL for email verification
+ * @param {string} verificationCode - The verification code
+ * @returns {string} Full URL for email verification
+ */
+function getEmailVerificationUrl(verificationCode) {
+  return `${FRONTEND_URL}/mail-verification?code=${verificationCode}`;
+}
+
+/**
+ * Get email verification expiry in human-readable format
+ * @returns {string} Expiry time string
+ */
+function getEmailVerificationExpiryString() {
+  const hours = Number.parseInt(EMAIL_VERIFICATION_EXPIRY_HOURS, 10);
+  if (hours >= 24) {
+    const days = Math.floor(hours / 24);
+    return `${days} day${days > 1 ? 's' : ''}`;
+  }
+  return `${hours} hour${hours > 1 ? 's' : ''}`;
+}
+
 module.exports = {
   generateTokenPair,
   verifyAccessToken,
@@ -319,5 +409,11 @@ module.exports = {
   markPasswordResetTokenAsUsed,
   getPasswordResetUrl,
   getPasswordResetExpiryString,
+  // Email verification functions
+  createEmailVerificationToken,
+  verifyEmailVerificationCode,
+  markEmailVerificationTokenAsUsed,
+  getEmailVerificationUrl,
+  getEmailVerificationExpiryString,
 };
 

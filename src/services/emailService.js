@@ -88,11 +88,12 @@ function generateHtmlFromTemplate(templateName, data) {
 
     case EMAIL_TEMPLATES.EMAIL_VERIFICATION:
       return wrapHtml(`
-        <h2>Verify Your Email Address</h2>
-        <p>Hi ${data.firstName || 'there'},</p>
-        <p>Please verify your email address by clicking the button below:</p>
-        <a href="${data.verificationUrl}" class="button">Verify Email</a>
-        <p>This link will expire in ${data.expiresIn || '24 hours'}.</p>
+        <h2>E-posta Adresinizi Doğrulayın</h2>
+        <p>Merhaba ${data.firstName || ''},</p>
+        <p>Go Body'ye hoş geldiniz! Hesabınızı aktif hale getirmek için lütfen aşağıdaki butona tıklayarak e-posta adresinizi doğrulayın:</p>
+        <a href="${data.verificationUrl}" style="display: inline-block; padding: 12px 30px; background-color: #4F46E5; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0;">E-postamı Doğrula</a>
+        <p>Bu bağlantı ${data.expiresIn || '24 saat'} içinde geçerliliğini yitirecektir.</p>
+        <p>Bu e-postayı siz talep etmediyseniz, görmezden gelebilirsiniz.</p>
       `);
 
     case EMAIL_TEMPLATES.RESERVATION_CONFIRMATION:
@@ -258,7 +259,7 @@ function generateTextFromTemplate(templateName, data) {
       return `Password Reset Request\n\nHi ${data.firstName || 'there'},\n\nWe received a request to reset your password. Visit this link to set a new password:\n${data.resetUrl}\n\nThis link will expire in ${data.expiresIn || '1 hour'}.\n\nIf you didn't request this, you can safely ignore this email.`;
 
     case EMAIL_TEMPLATES.EMAIL_VERIFICATION:
-      return `Verify Your Email Address\n\nHi ${data.firstName || 'there'},\n\nPlease verify your email address by visiting:\n${data.verificationUrl}\n\nThis link will expire in ${data.expiresIn || '24 hours'}.`;
+      return `E-posta Adresinizi Doğrulayın\n\nMerhaba ${data.firstName || ''},\n\nGo Body'ye hoş geldiniz! Hesabınızı aktif hale getirmek için lütfen aşağıdaki bağlantıya tıklayın:\n${data.verificationUrl}\n\nBu bağlantı ${data.expiresIn || '24 saat'} içinde geçerliliğini yitirecektir.\n\nBu e-postayı siz talep etmediyseniz, görmezden gelebilirsiniz.`;
 
     case EMAIL_TEMPLATES.RESERVATION_CONFIRMATION:
       return `Reservation Confirmed!\n\nHi ${data.firstName},\n\nYour reservation has been confirmed:\n- Service: ${data.serviceName}\n- Date: ${data.date}\n- Time: ${data.time}\n- Duration: ${data.duration} minutes\n${data.providerName ? `- Provider: ${data.providerName}` : ''}\n\nWe look forward to seeing you!`;
