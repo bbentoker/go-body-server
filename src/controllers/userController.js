@@ -21,6 +21,7 @@ function extractUserPayload(body, overrides = {}, options = {}) {
     'password',
     'role_id',
     'country_id',
+    'is_active',
   ];
 
   const {
@@ -163,8 +164,8 @@ const updateOwnProfile = asyncHandler(async (req, res) => {
   try {
     // Ensure the user is authenticated and is not a provider/staff account
     if (!req.user || req.user.isProvider) {
-      return res.status(403).json({ 
-        message: 'Access denied. User account required.' 
+      return res.status(403).json({
+        message: 'Access denied. User account required.'
       });
     }
 
@@ -197,8 +198,8 @@ const getOwnProfile = asyncHandler(async (req, res) => {
   try {
     // Ensure the user is authenticated
     if (!req.user) {
-      return res.status(401).json({ 
-        message: 'Authentication required' 
+      return res.status(401).json({
+        message: 'Authentication required'
       });
     }
 
@@ -225,8 +226,8 @@ const updateLanguagePreference = asyncHandler(async (req, res) => {
   try {
     // Ensure the user is authenticated and is not a provider/staff account
     if (!req.user || req.user.isProvider) {
-      return res.status(403).json({ 
-        message: 'Access denied. User account required.' 
+      return res.status(403).json({
+        message: 'Access denied. User account required.'
       });
     }
 
